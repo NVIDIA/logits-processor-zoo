@@ -1,3 +1,6 @@
+[![PyPI version](https://badge.fury.io/py/logits-processor-zoo.svg)](https://badge.fury.io/py/logits-processor-zoo)
+[![License: MIT](https://img.shields.io/badge/License-Apache2.0-yellow.svg)](https://opensource.org/licenses/Apache2.0)
+
 <p align="center">
     <img src="docs/logo.jpg" width="50%">
 </p>
@@ -5,6 +8,12 @@
 # logits-processor-zoo
 
 Struggling to get LLMs to follow your instructions? LogitsProcessorZoo offers a zoo of tools to use LLMs for specific tasks, beyond just grammar enforcement!
+
+## Installation
+
+```bash
+pip install logits-processor-zoo
+```
 
 ## Supported Frameworks
 * transformers
