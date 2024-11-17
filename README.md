@@ -1,3 +1,7 @@
+<p align="center">
+    <img src="docs/logo.jpg" width="50%">
+</p>
+
 # logits-processor-zoo
 
 Struggling to get LLMs to follow your instructions? LogitsProcessorZoo offers a zoo of tools to use LLMs for specific tasks, beyond just grammar enforcement!
