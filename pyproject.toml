@@ -1,16 +1,16 @@
 [tool.poetry]
 name = "logits-processor-zoo"
-version = "0.1.0"
+version = "0.1.1"
 description = "A collection of LogitsProcessors to customize and enhance LLM behavior for specific tasks."
 authors = ["Ahmet Erdem", "Ivan Sorokin", "Maximilian Jeblick", "Darragh Hanley", "David Austin"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.10"
 torch = "*"
-transformers = "^4.41.2"
-accelerate = "^0.26.1"
-vllm = { version = "^0.5.0.post1", optional = true }
+transformers = ">=4.41.2"
+accelerate = ">=0.26.1"
+vllm = { version = ">=0.5.0.post1", optional = true }
 
 [tool.poetry.extras]
 vllm = ["vllm"]
