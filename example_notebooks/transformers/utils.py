@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, LogitsProcessorLis
 
 
 class LLMRunner:
-    def __init__(self, model_name="meta-llama/Llama-3.2-1B-Instruct"):
+    def __init__(self, model_name="Qwen/Qwen2.5-1.5B-Instruct"):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
         self.model = AutoModelForCausalLM.from_pretrained(
