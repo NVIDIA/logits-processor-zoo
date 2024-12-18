@@ -29,7 +29,6 @@ class LLMRunner:
                 return_dict=True,
             ).to(self.model.device)
 
-            
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=max_tokens,
@@ -50,7 +49,7 @@ class LLMRunner:
                     self.tokenizer.decode(
                         inputs["input_ids"][0], skip_special_tokens=True
                     )
-                ) :
+                ):
             ].strip()
 
             print(f"Prompt: {prompt}")
