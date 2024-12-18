@@ -29,13 +29,17 @@ class LLMRunner:
                 return_dict=True,
             ).to(self.model.device)
 
-            with torch.inference_mode():
-                outputs = self.model.generate(
-                    **inputs,
-                    max_new_tokens=max_tokens,
-                    min_new_tokens=1,
-                    logits_processor=LogitsProcessorList(logits_processor_list),
-                )
+            
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=max_tokens,
+                min_new_tokens=1,
+                logits_processor=LogitsProcessorList(logits_processor_list),
+                do_sample=False,
+                temperature=None,
+                top_p=None,
+                top_k=None,
+            )
 
             gen_output = self.tokenizer.batch_decode(
                 outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False
