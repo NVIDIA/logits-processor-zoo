@@ -29,8 +29,7 @@ def text_to_token(tokenizer: PreTrainedTokenizer, text: str, last: bool):
 
 
 def get_new_line_tokens(tokenizer):
-    new_line_tokens = set()
-    for newline in ["\n", "\n\n", "?\n", ".\n"]:
-        new_line_tokens.add(text_to_token(tokenizer, newline, last=True))
+    new_line_tokens = [token for token in tokenizer.get_vocab().values()
+                       if tokenizer.decode(token).endswith("\n")]
 
-    return new_line_tokens
+    return set(new_line_tokens)
