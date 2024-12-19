@@ -18,7 +18,7 @@
 from transformers import PreTrainedTokenizer
 from typing import List
 import torch
-from logits_processor_zoo.utils import text_to_token
+from logits_processor_zoo.utils import text_to_token, get_new_line_tokens
 
 
 class MultipleChoiceLogitsProcessor:
@@ -46,7 +46,7 @@ class MultipleChoiceLogitsProcessor:
         if choices is None:
             choices = ["1", "2", "3", "4"]
 
-        self.new_line_token = text_to_token(tokenizer, "\n", last=False)
+        self.new_line_token = get_new_line_tokens(tokenizer)
         self.delimiter_token = text_to_token(tokenizer, delimiter, last=False)
         self.choice_tokens = [text_to_token(tokenizer, choice, last=False) for choice in choices]
         self.boost_first_words = boost_first_words
@@ -61,7 +61,7 @@ class MultipleChoiceLogitsProcessor:
             for i in range(len(prompt_tokens_ids) - 3):
                 # A choice is like "\nA) hair dryer", where first token is "hair"
                 choice_starts = (
-                        (prompt_tokens_ids[i] == self.new_line_token) and
+                        (prompt_tokens_ids[i] in self.new_line_token) and
                         (prompt_tokens_ids[i + 1] == self.choice_tokens[choice]) and
                         (prompt_tokens_ids[i + 2] == self.delimiter_token)
                 )

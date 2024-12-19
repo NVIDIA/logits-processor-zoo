@@ -26,3 +26,11 @@ def text_to_token(tokenizer: PreTrainedTokenizer, text: str, last: bool):
         raise Exception(f"Can't convert {text} to token. It has {len(tokens)} tokens.")
 
     return tokens[-1]
+
+
+def get_new_line_tokens(tokenizer):
+    new_line_tokens = set()
+    for newline in ["\n", "\n\n", "?\n", ".\n"]:
+        new_line_tokens.add(text_to_token(tokenizer, newline, last=True))
+
+    return new_line_tokens
