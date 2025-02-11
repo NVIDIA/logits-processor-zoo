@@ -19,6 +19,7 @@ from .generation_length import GenLengthLogitsProcessor
 from .cite_prompt import CiteFromPromptLogitsProcessor
 from .last_phrase import ForceLastPhraseLogitsProcessor
 from .multiple_choice import MultipleChoiceLogitsProcessor
+from .trigger_phrase import TriggerPhraseLogitsProcessor
 
 __all__ = ['GenLengthLogitsProcessor', 'CiteFromPromptLogitsProcessor', 'ForceLastPhraseLogitsProcessor',
-           'MultipleChoiceLogitsProcessor']
+           'MultipleChoiceLogitsProcessor', 'TriggerPhraseLogitsProcessor']
