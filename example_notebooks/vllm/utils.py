@@ -14,12 +14,12 @@ class vLLMRunner:
     def generate_response(self, prompts, logits_processor_list=None, max_tokens=1000):
         if logits_processor_list is None:
             logits_processor_list = []
-            
+
         prompts_with_template = []
         for prompt in prompts:
             messages = [
                 {
-                    "role": "user", 
+                    "role": "user",
                     "content": prompt
                 }
             ]
