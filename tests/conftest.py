@@ -24,6 +24,7 @@ class LLMRunner:
     def __init__(self, model_name='google/gemma-1.1-2b-it'):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.tokenizer.padding_side = "left"
 
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,

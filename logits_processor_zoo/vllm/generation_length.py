@@ -38,8 +38,7 @@ class GenLengthLogitsProcessor:
     """
     def __init__(self, tokenizer: PreTrainedTokenizer, boost_factor: float,
                  p: int = 2, complete_sentences: bool = False, boost_token_str: str = None):
-        self.eos_token = tokenizer.eos_token_id
-        self.boost_token = self.eos_token
+        self.boost_token = tokenizer.eos_token_id
         if boost_token_str is not None:
             self.boost_token = text_to_token(tokenizer, boost_token_str, last=False)
         self.boost_factor = boost_factor
@@ -47,11 +46,13 @@ class GenLengthLogitsProcessor:
         self.full_stop_token = text_to_token(tokenizer, "It is a sentence.", last=True)
         self.new_line_token = text_to_token(tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
-        self.enabled = 1
 
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
         gen_length = len(past_token_ids)
-        boost_val = self.enabled * self.boost_factor * (gen_length ** self.p) / (10 ** self.p)
+
+        boost_val = 0
+        if not (self.boost_token in past_token_ids):
+            boost_val = self.boost_factor * (gen_length ** self.p) / (10 ** self.p)
 
         if self.complete_sentences and gen_length > 0:
             enabled = (past_token_ids[-1] == self.full_stop_token) | (past_token_ids[-1] == self.new_line_token)
@@ -59,6 +60,4 @@ class GenLengthLogitsProcessor:
         else:
             scores[self.boost_token] += boost_val
 
-        if (torch.argmax(scores) == self.boost_token) & (self.boost_token != self.eos_token):
-            self.enabled = 0
         return scores

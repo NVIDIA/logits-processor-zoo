@@ -16,7 +16,6 @@
 #
 
 from transformers import PreTrainedTokenizer
-from typing import List
 import torch
 from logits_processor_zoo.utils import text_to_token
 
@@ -33,29 +32,31 @@ class TriggerPhraseLogitsProcessor:
     trigger_count (int): How many times the phrase will be triggered.
     trigger_after (bool): Whether the phrase is written after the trigger token or instead of the trigger token.
     """
-    def __init__(self, phrase: str, trigger_token_phrase: str, tokenizer: PreTrainedTokenizer, trigger_count: int = 1,
-                 trigger_after: bool = False):
+    def __init__(self, phrase: str, trigger_token_phrase: str, tokenizer: PreTrainedTokenizer, batch_size: int,
+                 trigger_count: int = 1, trigger_after: bool = False):
         self.trigger_token = text_to_token(tokenizer, trigger_token_phrase, last=False)
         self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
-        self.index = -1
-        self.trigger_count = trigger_count
+        self.iterators = -torch.ones(batch_size, dtype=torch.int32)
+        self.trigger_count = trigger_count*torch.ones(batch_size, dtype=torch.int32)
         self.very_large_number = 999
         self.trigger_after = trigger_after
 
-    def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
-        if self.trigger_count <= 0:
-            return scores
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
+        for i in range(scores.shape[0]):
+            if self.trigger_count[i]:
+                continue
 
-        if scores.argmax() == self.trigger_token and self.index == -1:
-            self.index = 0
-            if not self.trigger_after:
-                scores[self.phrase_tokens[self.index]] = scores.max() + self.very_large_number
-                self.index += 1
-        elif len(self.phrase_tokens) > self.index >= 0:
-            scores[self.phrase_tokens[self.index]] = scores.max() + self.very_large_number
-            self.index += 1
-        elif len(self.phrase_tokens) == self.index:
-            self.index = -1
-            self.trigger_count -= 1
+            it = self.iterators[i].item()
+            if scores[i, :].argmax() == self.trigger_token and it == -1:
+                self.iterators[i] = 0
+                if not self.trigger_after:
+                    scores[i, self.phrase_tokens[it]] = scores[i].max() + self.very_large_number
+                    self.iterators[i] += 1
+            elif len(self.phrase_tokens) > it >= 0:
+                scores[i, self.phrase_tokens[it]] = scores[i].max() + self.very_large_number
+                self.iterators[i] += 1
+            elif len(self.phrase_tokens) == it:
+                self.iterators[i] = -1
+                self.trigger_count[i] -= 1
 
         return scores
