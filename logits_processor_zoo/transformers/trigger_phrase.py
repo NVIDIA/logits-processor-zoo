@@ -43,7 +43,7 @@ class TriggerPhraseLogitsProcessor:
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
         for i in range(scores.shape[0]):
-            if self.trigger_count[i]:
+            if self.trigger_count[i] <= 0:
                 continue
 
             it = self.iterators[i].item()
