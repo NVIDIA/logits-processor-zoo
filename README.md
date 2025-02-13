@@ -27,11 +27,11 @@ import vllm
 from logits_processor_zoo.vllm import GenLengthLogitsProcessor, CiteFromPromptLogitsProcessor, ForceLastPhraseLogitsProcessor
 
 model = vllm.LLM(
-            model_name,
-            trust_remote_code=True,
-            dtype="half",
-            enforce_eager=True
-        )
+    model_name,
+    trust_remote_code=True,
+    dtype="half",
+    enforce_eager=True
+)
 tokenizer = model.get_tokenizer()
         
 logits_processors = [
@@ -40,19 +40,18 @@ logits_processors = [
     ForceLastPhraseLogitsProcessor("\n\nReferences:\n", tokenizer)
 ]
 
-
 gen_output = model.generate(
-            prompts,
-            vllm.SamplingParams(
-                n=1,
-                temperature=0,
-                seed=0,
-                skip_special_tokens=True,
-                max_tokens=64,
-                logits_processors=logits_processors
-            ),
-            use_tqdm=False
-        )
+    prompts,
+    vllm.SamplingParams(
+        n=1,
+        temperature=0,
+        seed=0,
+        skip_special_tokens=True,
+        max_tokens=64,
+        logits_processors=logits_processors
+    ),
+    use_tqdm=False
+)
 ```
 
 
