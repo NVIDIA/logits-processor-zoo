@@ -55,7 +55,8 @@ class TriggerPhraseLogitsProcessor:
             elif len(self.phrase_tokens) > it >= 0:
                 scores[i, self.phrase_tokens[it]] = scores[i].max() + self.very_large_number
                 self.iterators[i] += 1
-            elif len(self.phrase_tokens) == it:
+
+            if len(self.phrase_tokens) == self.iterators[i].item():  # phrase completed, reset for next trigger
                 self.iterators[i] = -1
                 self.trigger_count[i] -= 1
 
