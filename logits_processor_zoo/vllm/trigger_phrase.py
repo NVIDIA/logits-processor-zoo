@@ -37,12 +37,18 @@ class TriggerPhraseLogitsProcessor:
                  trigger_after: bool = False):
         self.trigger_token = text_to_token(tokenizer, trigger_token_phrase, last=False)
         self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
+        self.initial_trigger_count = trigger_count
+        self.trigger_after = trigger_after
+        self.very_large_number = 999
+        # Initialize state for a new sequence
         self.index = -1
         self.trigger_count = trigger_count
-        self.very_large_number = 999
-        self.trigger_after = trigger_after
 
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
+        if not past_token_ids:
+            self.index = -1
+            self.trigger_count = self.initial_trigger_count
+
         if self.trigger_count <= 0:
             return scores
 
