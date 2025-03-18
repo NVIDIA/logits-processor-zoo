@@ -17,9 +17,10 @@
 
 from transformers import PreTrainedTokenizer
 import torch
+from logits_processor_zoo.transformers.base import BaseLogitsProcessor
 
 
-class ForceLastPhraseLogitsProcessor:
+class ForceLastPhraseLogitsProcessor(BaseLogitsProcessor):
     """
     A logits processor which forces LLMs to use the given phrase before they finalize their answers.
     Most common use cases can be providing references, thanking user with context etc.
@@ -32,11 +33,15 @@ class ForceLastPhraseLogitsProcessor:
     batch_size (int): Number of prompts in the batch.
     """
     def __init__(self, phrase: str, tokenizer: PreTrainedTokenizer, batch_size: int):
+        super().__init__()
         self.eos_token_id = tokenizer.eos_token_id
         self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
-        self.iterators = torch.zeros(batch_size, dtype=torch.int32)
+        self.batch_size = batch_size
 
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
+    def _reset(self):
+        self.iterators = torch.zeros(self.batch_size, dtype=torch.int32)
+
+    def _process(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
         for i in range(scores.shape[0]):
             it = self.iterators[i].item()
             if scores[i, :].argmax() == self.eos_token_id and it == 0:

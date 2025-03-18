@@ -19,9 +19,10 @@ from transformers import PreTrainedTokenizer
 from typing import List
 import torch
 from logits_processor_zoo.utils import text_to_token, get_new_line_tokens
+from logits_processor_zoo.transformers.base import BaseLogitsProcessor
 
 
-class MultipleChoiceLogitsProcessor:
+class MultipleChoiceLogitsProcessor(BaseLogitsProcessor):
     """
     A logits processor to answer multiple choice questions with one of the choices.
     A multiple choice question is like:
@@ -41,8 +42,9 @@ class MultipleChoiceLogitsProcessor:
     boost_first_words (float): Nonzero values add choices' first tokens' logits to boost performance.
                             Especially useful for the models which have difficulty associating the choice with its text.
     """
-    def __init__(self, tokenizer: PreTrainedTokenizer, choices: List[str] = None,
-                 delimiter: str = ".", boost_first_words: float = 0.0):
+    def __init__(self, tokenizer: PreTrainedTokenizer, choices: List[str] = None, delimiter: str = ".",
+                 boost_first_words: float = 0.0):
+        super().__init__()
         if choices is None:
             choices = ["1", "2", "3", "4"]
 
@@ -52,7 +54,7 @@ class MultipleChoiceLogitsProcessor:
         self.boost_first_words = boost_first_words
         self.very_large_number = 999
 
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
+    def _process(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
         for row_ind in range(input_ids.shape[0]):
             if self.boost_first_words:
                 choice = 0

@@ -18,9 +18,10 @@
 from typing import List
 import torch
 from transformers import PreTrainedTokenizer
+from logits_processor_zoo.transformers.base import BaseLogitsProcessor
 
 
-class CiteFromPromptLogitsProcessor:
+class CiteFromPromptLogitsProcessor(BaseLogitsProcessor):
     """
     A logits processor which boosts or diminishes the likelihood of tokens present in the prompt (and optionally
     EOS token) to encourage the model to generate tokens similar to those seen in the prompt or vice versa.
@@ -36,6 +37,7 @@ class CiteFromPromptLogitsProcessor:
     """
     def __init__(self, tokenizer: PreTrainedTokenizer, prompts: List[str], boost_factor: float = 1.0,
                  boost_eos: bool = True):
+        super().__init__()
         self.boost_factor = boost_factor
 
         self.boost_ids = []
@@ -47,7 +49,7 @@ class CiteFromPromptLogitsProcessor:
 
             self.boost_ids.append(list(prompt_tokens))
 
-    def __call__(self, input_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
+    def _process(self, input_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
         for i in range(scores.shape[0]):
             scores[i, self.boost_ids[i]] += self.boost_factor
         return scores

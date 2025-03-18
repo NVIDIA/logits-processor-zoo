@@ -18,9 +18,10 @@
 from transformers import PreTrainedTokenizer
 import torch
 from logits_processor_zoo.utils import text_to_token
+from logits_processor_zoo.transformers.base import BaseLogitsProcessor
 
 
-class TriggerPhraseLogitsProcessor:
+class TriggerPhraseLogitsProcessor(BaseLogitsProcessor):
     """
     A logits processor which triggers phrases when it encounters given token.
 
@@ -34,14 +35,19 @@ class TriggerPhraseLogitsProcessor:
     """
     def __init__(self, phrase: str, trigger_token_phrase: str, tokenizer: PreTrainedTokenizer, batch_size: int,
                  trigger_count: int = 1, trigger_after: bool = False):
+        super().__init__()
         self.trigger_token = text_to_token(tokenizer, trigger_token_phrase, last=False)
         self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
-        self.iterators = -torch.ones(batch_size, dtype=torch.int32)
-        self.trigger_count = trigger_count*torch.ones(batch_size, dtype=torch.int32)
         self.very_large_number = 999
         self.trigger_after = trigger_after
+        self.batch_size = batch_size
+        self.initial_trigger_count = trigger_count
 
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
+    def _reset(self):
+        self.iterators = -torch.ones(self.batch_size, dtype=torch.int32)
+        self.trigger_count = self.initial_trigger_count*torch.ones(self.batch_size, dtype=torch.int32)
+
+    def _process(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
         for i in range(scores.shape[0]):
             if self.trigger_count[i] <= 0:
                 continue

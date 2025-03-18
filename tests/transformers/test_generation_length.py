@@ -30,3 +30,6 @@ def test_gen_length_logits_processor(llm_runner):
     processed_gen_output = llm_runner.generate_response(example_prompts, logits_processors)
 
     assert all(len(p1) > len(p2) for p1, p2 in zip(default_gen_output, processed_gen_output))
+
+    processed_gen_output_repeat = llm_runner.generate_response(example_prompts, logits_processors)
+    assert all(p1 == p2 for p1, p2 in zip(processed_gen_output, processed_gen_output_repeat))

@@ -33,9 +33,15 @@ class ForceLastPhraseLogitsProcessor:
     def __init__(self, phrase: str, tokenizer: PreTrainedTokenizer):
         self.eos_token_id = tokenizer.eos_token_id
         self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
+        self._reset()
+
+    def _reset(self):
         self.index = 0
 
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
+        if not past_token_ids:  # new generation
+            self._reset()
+
         if scores.argmax() == self.eos_token_id and self.index == 0:
             scores[self.phrase_tokens[self.index]] = scores.max() + 1
             self.index += 1

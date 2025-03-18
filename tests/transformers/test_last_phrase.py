@@ -31,3 +31,6 @@ def test_cite_from_prompt_logits_processor(llm_runner):
     processed_gen_output = llm_runner.generate_response(example_prompts, logits_processors,  max_new_tokens=100)
 
     assert all((phrase in out) for out in processed_gen_output)
+
+    processed_gen_output_repeat = llm_runner.generate_response(example_prompts, logits_processors,  max_new_tokens=100)
+    assert all(p1 == p2 for p1, p2 in zip(processed_gen_output, processed_gen_output_repeat))

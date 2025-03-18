@@ -40,14 +40,15 @@ class TriggerPhraseLogitsProcessor:
         self.initial_trigger_count = trigger_count
         self.trigger_after = trigger_after
         self.very_large_number = 999
-        # Initialize state for a new sequence
+        self._reset()
+
+    def _reset(self):
         self.index = -1
-        self.trigger_count = trigger_count
+        self.trigger_count = self.initial_trigger_count
 
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
-        if not past_token_ids:
-            self.index = -1
-            self.trigger_count = self.initial_trigger_count
+        if not past_token_ids:  # new generation
+            self._reset()
 
         if self.trigger_count <= 0:
             return scores
