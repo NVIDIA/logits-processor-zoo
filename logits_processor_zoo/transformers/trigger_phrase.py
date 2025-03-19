@@ -23,7 +23,7 @@ from logits_processor_zoo.transformers.base import BaseLogitsProcessor
 
 class TriggerPhraseLogitsProcessor(BaseLogitsProcessor):
     """
-    A logits processor which triggers phrases when it encounters given token.
+    A logits processor which triggers phrases when it encounters a given token.
 
     Parameters
     ----------

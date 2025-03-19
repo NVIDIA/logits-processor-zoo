@@ -23,7 +23,7 @@ from logits_processor_zoo.utils import text_to_token
 
 class TriggerPhraseLogitsProcessor:
     """
-    A logits processor which triggers phrases when it encounters given token.
+    A logits processor which triggers phrases when it encounters a given token.
 
     Parameters
     ----------
