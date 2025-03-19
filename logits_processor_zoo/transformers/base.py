@@ -26,11 +26,14 @@ class BaseLogitsProcessor:
         pass
 
     def _reset_if_new_batch(self, input_ids: torch.LongTensor):
-        if self.input_len is not None:
+        first_time = self.input_len is None
+        if first_time:
+            self._reset()
+        else:
+            # Assuming 1 new token is generated in sequential calls of the same batch. Resets if it is not the case.
+            # It is a hack to figure out if a new generation starts because transformers API doesn't provide it.
             if input_ids.shape[1] != self.input_len + 1:
                 self._reset()
-        else:
-            self._reset()
 
         self.input_len = input_ids.shape[1]
 
