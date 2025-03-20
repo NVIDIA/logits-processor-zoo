@@ -49,17 +49,15 @@ class GenLengthLogitsProcessor(BaseLogitsProcessor):
         self.new_line_token = text_to_token(tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
 
-    def _reset(self):
-        self.token_count = 0
-
     def _process(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
-        boost_val = self.boost_factor * (self.token_count ** self.p) / (10 ** self.p)
+        token_count = input_ids.shape[1] - self.prompt_token_ids.shape[1]
 
-        enabled = (input_ids[:, -self.token_count:] == self.boost_token).sum(dim=1) == 0
+        boost_val = self.boost_factor * (token_count ** self.p) / (10 ** self.p)
+
+        enabled = (input_ids[:, -token_count:] == self.boost_token).sum(dim=1) == 0
         if self.complete_sentences:
             enabled = enabled & ((input_ids[:, -1] == self.full_stop_token) | (input_ids[:, -1] == self.new_line_token))
 
         scores[:, self.boost_token] += enabled * boost_val
-        self.token_count += 1
 
         return scores

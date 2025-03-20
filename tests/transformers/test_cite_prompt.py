@@ -26,7 +26,7 @@ def test_cite_from_prompt_logits_processor(llm_runner):
 
     default_gen_output = llm_runner.generate_response(example_prompts, max_new_tokens=10)
 
-    logits_processors = [CiteFromPromptLogitsProcessor(llm_runner.tokenizer, example_prompts, boost_factor=100.0)]
+    logits_processors = [CiteFromPromptLogitsProcessor(llm_runner.tokenizer, boost_factor=100.0)]
     processed_gen_output = llm_runner.generate_response(example_prompts, logits_processors,  max_new_tokens=10)
 
     for prompt, default_out, processed_out in zip(example_prompts, default_gen_output, processed_gen_output):

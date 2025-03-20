@@ -20,27 +20,32 @@ import torch
 
 class BaseLogitsProcessor:
     def __init__(self):
-        self.input_len = None
+        self.prompt_token_ids = None
+        self.prev_token_ids = None
 
     def _reset(self):
         pass
 
-    def _reset_if_new_batch(self, input_ids: torch.LongTensor):
-        first_time = self.input_len is None
+    def _check_new_generation(self, input_ids: torch.LongTensor):
+        first_time = self.prompt_token_ids is None
         if first_time:
             self._reset()
+            self.prompt_token_ids = input_ids
         else:
-            # Assuming 1 new token is generated in sequential calls of the same batch. Resets if it is not the case.
-            # It is a hack to figure out if a new generation starts because transformers API doesn't provide it.
-            if input_ids.shape[1] != self.input_len + 1:
-                self._reset()
+            same_gen = False
+            if input_ids.shape[1] > 1:
+                same_gen = torch.equal(input_ids[:, :-1], self.prev_token_ids)
 
-        self.input_len = input_ids.shape[1]
+            if not same_gen:
+                self._reset()
+                self.prompt_token_ids = input_ids
+
+        self.prev_token_ids = input_ids
 
     def _process(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
         return scores
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
-        self._reset_if_new_batch(input_ids)
+        self._check_new_generation(input_ids)
         scores = self._process(input_ids, scores)
         return scores

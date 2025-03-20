@@ -55,21 +55,21 @@ class MultipleChoiceLogitsProcessor(BaseLogitsProcessor):
         self.very_large_number = 999
 
     def _process(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
-        for row_ind in range(input_ids.shape[0]):
+        for row_ind in range(self.prompt_token_ids.shape[0]):
             if self.boost_first_words:
                 choice = 0
 
                 first_tokens = []
-                for i in range(len(input_ids[row_ind]) - 3):
+                for i in range(len(self.prompt_token_ids[row_ind]) - 3):
                     # A choice is like "\nA) hair dryer", where first token is "hair"
                     choice_starts = (
-                            (input_ids[row_ind, i].item() in self.new_line_tokens) and
-                            (input_ids[row_ind, i + 1] == self.choice_tokens[choice]) and
-                            (input_ids[row_ind, i + 2] == self.delimiter_token)
+                            (self.prompt_token_ids[row_ind, i].item() in self.new_line_tokens) and
+                            (self.prompt_token_ids[row_ind, i + 1] == self.choice_tokens[choice]) and
+                            (self.prompt_token_ids[row_ind, i + 2] == self.delimiter_token)
                     )
 
                     if choice_starts:
-                        first_tokens.append(input_ids[row_ind, i + 3])
+                        first_tokens.append(self.prompt_token_ids[row_ind, i + 3])
                         choice += 1
 
                         if choice >= len(self.choice_tokens):
