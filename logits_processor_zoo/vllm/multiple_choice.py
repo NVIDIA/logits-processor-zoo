@@ -43,6 +43,9 @@ class MultipleChoiceLogitsProcessor:
     """
     def __init__(self, tokenizer: PreTrainedTokenizer, choices: List[str] = None,
                  delimiter: str = ".", boost_first_words: float = 0.0):
+        self.tokenizer = tokenizer
+        self.choices = choices
+        self.delimiter = delimiter
         if choices is None:
             choices = ["1", "2", "3", "4"]
 
@@ -51,6 +54,9 @@ class MultipleChoiceLogitsProcessor:
         self.choice_tokens = [text_to_token(tokenizer, choice, last=False) for choice in choices]
         self.boost_first_words = boost_first_words
         self.very_large_number = 999
+
+    def clone(self):
+        return MultipleChoiceLogitsProcessor(self.tokenizer, self.choices, self.delimiter, self.boost_first_words)
 
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
 

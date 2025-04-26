@@ -46,6 +46,11 @@ class GenLengthLogitsProcessor:
         self.full_stop_token = text_to_token(tokenizer, "It is a sentence.", last=True)
         self.new_line_token = text_to_token(tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
+        self.tokenizer = tokenizer
+
+    def clone(self):
+        return GenLengthLogitsProcessor(self.tokenizer, self.boost_factor, self.p,
+                                        self.complete_sentences, self.boost_token_str)
 
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
         gen_length = len(past_token_ids)

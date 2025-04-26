@@ -35,12 +35,20 @@ class TriggerPhraseLogitsProcessor:
     """
     def __init__(self, phrase: str, trigger_token_phrase: str, tokenizer: PreTrainedTokenizer, trigger_count: int = 1,
                  trigger_after: bool = False):
+        self.phrase = phrase
+        self.trigger_token_phrase = trigger_token_phrase
+        self.tokenizer = tokenizer
+        self.trigger_count = trigger_count
         self.trigger_token = text_to_token(tokenizer, trigger_token_phrase, last=False)
         self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
         self.initial_trigger_count = trigger_count
         self.trigger_after = trigger_after
         self.very_large_number = 999
         self._reset()
+
+    def clone(self):
+        return TriggerPhraseLogitsProcessor(self.phrase, self.trigger_token_phrase, self.tokenizer,
+                                            self.initial_trigger_count, self.trigger_after)
 
     def _reset(self):
         self.index = -1

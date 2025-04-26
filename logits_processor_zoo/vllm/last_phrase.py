@@ -34,6 +34,13 @@ class ForceLastPhraseLogitsProcessor:
         self.eos_token_id = tokenizer.eos_token_id
         self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
         self._reset()
+        self.phrase = phrase
+        self.tokenizer = tokenizer
+
+    # LogitsProcessor can contain a clone attribute to deep copy it
+    # https://github.com/vllm-project/vllm/blob/19dcc02a72e3ed52e3bf95aae44ea1f40ce42ea0/vllm/sampling_params.py#L537-L550
+    def clone(self):
+        return ForceLastPhraseLogitsProcessor(self.phrase, self.tokenizer)
 
     def _reset(self):
         self.index = 0

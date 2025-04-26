@@ -33,9 +33,13 @@ class CiteFromPromptLogitsProcessor:
     boost_eos (bool, optional): If True, boosts EOS token too.
     """
     def __init__(self, tokenizer: PreTrainedTokenizer, boost_factor: float = 1.0, boost_eos: bool = True):
+        self.tokenizer = tokenizer
         self.boost_factor = boost_factor
         self.eos_token_id = tokenizer.eos_token_id
         self.boost_eos = boost_eos
+
+    def clone(self):
+        return CiteFromPromptLogitsProcessor(self.tokenizer, self.boost_factor, self.boost_eos)
 
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
         tokens = set(prompt_tokens_ids)
