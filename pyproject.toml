@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "logits-processor-zoo"
-version = "0.1.5"
+version = "0.1.6"
 description = "A collection of LogitsProcessors to customize and enhance LLM behavior for specific tasks."
 authors = ["Ahmet Erdem", "Ivan Sorokin", "Maximilian Jeblick", "Darragh Hanley", "David Austin"]
 readme = "README.md"

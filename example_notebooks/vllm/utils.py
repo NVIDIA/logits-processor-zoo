@@ -2,7 +2,7 @@ import vllm
 
 
 class vLLMRunner:
-    def __init__(self, model_name='google/gemma-1.1-2b-it'):
+    def __init__(self, model_name="Qwen/Qwen2.5-1.5B-Instruct"):
         self.model = vllm.LLM(
             model_name,
             trust_remote_code=True,

@@ -18,7 +18,7 @@
 from transformers import PreTrainedTokenizer
 from typing import List
 import torch
-from logits_processor_zoo.utils import text_to_token, get_new_line_tokens
+from logits_processor_zoo.utils import text_to_token, get_new_line_tokens, enforce_tokens
 
 
 class MultipleChoiceLogitsProcessor:
@@ -53,7 +53,6 @@ class MultipleChoiceLogitsProcessor:
         self.delimiter_token = text_to_token(tokenizer, delimiter, last=False)
         self.choice_tokens = [text_to_token(tokenizer, choice, last=False) for choice in choices]
         self.boost_first_words = boost_first_words
-        self.very_large_number = 999
 
     def clone(self):
         return MultipleChoiceLogitsProcessor(self.tokenizer, self.choices, self.delimiter, self.boost_first_words)
@@ -81,5 +80,5 @@ class MultipleChoiceLogitsProcessor:
 
             scores[self.choice_tokens[:len(first_tokens)]] += self.boost_first_words * scores[first_tokens]
 
-        scores[self.choice_tokens] += self.very_large_number
+        scores = enforce_tokens(scores, self.choice_tokens)
         return scores

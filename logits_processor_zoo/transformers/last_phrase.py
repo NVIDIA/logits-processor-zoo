@@ -18,6 +18,7 @@
 from transformers import PreTrainedTokenizer
 import torch
 from logits_processor_zoo.transformers.base import BaseLogitsProcessor
+from logits_processor_zoo.utils import enforce_tokens
 
 
 class ForceLastPhraseLogitsProcessor(BaseLogitsProcessor):
@@ -45,10 +46,10 @@ class ForceLastPhraseLogitsProcessor(BaseLogitsProcessor):
         for i in range(scores.shape[0]):
             it = self.iterators[i].item()
             if scores[i, :].argmax() == self.eos_token_id and it == 0:
-                scores[i, self.phrase_tokens[it]] = scores[i].max() + 1
+                scores[i] = enforce_tokens(scores[i], [self.phrase_tokens[it]])
                 self.iterators[i] += 1
             elif len(self.phrase_tokens) > it > 0:
-                scores[i, self.phrase_tokens[it]] = scores[i].max() + 1
+                scores[i] = enforce_tokens(scores[i], [self.phrase_tokens[it]])
                 self.iterators[i] += 1
 
         return scores

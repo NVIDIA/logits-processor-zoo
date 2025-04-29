@@ -18,7 +18,7 @@
 from transformers import PreTrainedTokenizer
 from typing import List
 import torch
-from logits_processor_zoo.utils import text_to_token
+from logits_processor_zoo.utils import text_to_token, enforce_tokens
 
 
 class TriggerPhraseLogitsProcessor:
@@ -43,7 +43,6 @@ class TriggerPhraseLogitsProcessor:
         self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
         self.initial_trigger_count = trigger_count
         self.trigger_after = trigger_after
-        self.very_large_number = 999
         self._reset()
 
     def clone(self):
@@ -64,10 +63,10 @@ class TriggerPhraseLogitsProcessor:
         if scores.argmax() == self.trigger_token and self.index == -1:
             self.index = 0
             if not self.trigger_after:
-                scores[self.phrase_tokens[self.index]] = scores.max() + self.very_large_number
+                scores = enforce_tokens(scores, [self.phrase_tokens[self.index]])
                 self.index += 1
         elif len(self.phrase_tokens) > self.index >= 0:
-            scores[self.phrase_tokens[self.index]] = scores.max() + self.very_large_number
+            scores = enforce_tokens(scores, [self.phrase_tokens[self.index]])
             self.index += 1
 
         if len(self.phrase_tokens) == self.index:  # phrase completed, reset for next trigger

@@ -16,6 +16,8 @@
 #
 
 from transformers import PreTrainedTokenizer
+from typing import List
+import torch
 
 
 def text_to_token(tokenizer: PreTrainedTokenizer, text: str, last: bool):
@@ -28,8 +30,17 @@ def text_to_token(tokenizer: PreTrainedTokenizer, text: str, last: bool):
     return tokens[-1]
 
 
-def get_new_line_tokens(tokenizer):
+def get_new_line_tokens(tokenizer: PreTrainedTokenizer):
     new_line_tokens = [token for token in tokenizer.get_vocab().values()
                        if tokenizer.decode(token).endswith("\n")]
 
     return set(new_line_tokens)
+
+
+def enforce_tokens(scores: torch.Tensor, tokens: List[int]):
+    choice_scores = scores[tokens].clone()
+    gap = scores.max() - choice_scores.min()
+    choice_scores += gap
+    scores.fill_(scores.min())
+    scores[tokens] = choice_scores
+    return scores
