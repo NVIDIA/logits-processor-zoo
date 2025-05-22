@@ -31,15 +31,19 @@ class CiteFromPromptLogitsProcessor:
     boost_factor (float): A factor to boost the likelihood of the tokens from the prompt.
                             Negative values are used for the opposite effect.
     boost_eos (bool, optional): If True, boosts EOS token too.
+    conditional_boost_factor (float, optional): A factor to boost the likelihood of the tokens based on previous token.
     """
-    def __init__(self, tokenizer: PreTrainedTokenizer, boost_factor: float = 1.0, boost_eos: bool = True):
+    def __init__(self, tokenizer: PreTrainedTokenizer, boost_factor: float = 1.0, boost_eos: bool = True,
+                 conditional_boost_factor: float = 0.0):
         self.tokenizer = tokenizer
         self.boost_factor = boost_factor
         self.eos_token_id = tokenizer.eos_token_id
         self.boost_eos = boost_eos
+        self.conditional_boost_factor = conditional_boost_factor
 
     def clone(self):
-        return CiteFromPromptLogitsProcessor(self.tokenizer, self.boost_factor, self.boost_eos)
+        return CiteFromPromptLogitsProcessor(self.tokenizer, self.boost_factor, self.boost_eos,
+                                             self.conditional_boost_factor)
 
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
         tokens = set(prompt_tokens_ids)
@@ -48,4 +52,13 @@ class CiteFromPromptLogitsProcessor:
 
         tokens = [t for t in tokens if t < scores.shape[0]]
         scores[tokens] += self.boost_factor
+
+        if (self.conditional_boost_factor != 0) and (len(past_token_ids) > 0):
+            tokens = set()
+            last_token = past_token_ids[-1]
+            for i in range(len(prompt_tokens_ids) - 1):
+                if (prompt_tokens_ids[i] == last_token) and (prompt_tokens_ids[i + 1] < scores.shape[0]):
+                    tokens.add(prompt_tokens_ids[i + 1])
+            scores[list(tokens)] += self.conditional_boost_factor
+
         return scores

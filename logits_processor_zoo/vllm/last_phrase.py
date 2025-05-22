@@ -51,10 +51,10 @@ class ForceLastPhraseLogitsProcessor:
             self._reset()
 
         if scores.argmax() == self.eos_token_id and self.index == 0:
-            scores = enforce_tokens(scores, self.phrase_tokens[self.index])
+            scores = enforce_tokens(scores, [self.phrase_tokens[self.index]])
             self.index += 1
         elif len(self.phrase_tokens) > self.index > 0:
-            scores = enforce_tokens(scores, self.phrase_tokens[self.index])
+            scores = enforce_tokens(scores, [self.phrase_tokens[self.index]])
             self.index += 1
 
         return scores
