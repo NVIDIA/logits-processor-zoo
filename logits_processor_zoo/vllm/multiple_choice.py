@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 
-from transformers import PreTrainedTokenizer
-from typing import List
+from transformers import PreTrainedTokenizer, AutoTokenizer
+from typing import List, Union
 import torch
 from logits_processor_zoo.utils import text_to_token, get_new_line_tokens, enforce_tokens
 
@@ -41,17 +41,20 @@ class MultipleChoiceLogitsProcessor:
     boost_first_words (float): Nonzero values add choices' first tokens' logits to boost performance.
                             Especially useful for the models which have difficulty associating the choice with its text.
     """
-    def __init__(self, tokenizer: PreTrainedTokenizer, choices: List[str] = None,
+    def __init__(self, tokenizer: Union[PreTrainedTokenizer, str], choices: List[str] = None,
                  delimiter: str = ".", boost_first_words: float = 0.0):
         self.tokenizer = tokenizer
+        if isinstance(self.tokenizer, str):
+            self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer)
+
         self.choices = choices
         self.delimiter = delimiter
         if choices is None:
             choices = ["1", "2", "3", "4"]
 
-        self.new_line_token = get_new_line_tokens(tokenizer)
-        self.delimiter_token = text_to_token(tokenizer, delimiter, last=False)
-        self.choice_tokens = [text_to_token(tokenizer, choice, last=False) for choice in choices]
+        self.new_line_token = get_new_line_tokens(self.tokenizer)
+        self.delimiter_token = text_to_token(self.tokenizer, delimiter, last=False)
+        self.choice_tokens = [text_to_token(self.tokenizer, choice, last=False) for choice in choices]
         self.boost_first_words = boost_first_words
 
     def clone(self):
