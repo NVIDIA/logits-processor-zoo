@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 
-from transformers import PreTrainedTokenizer
-from typing import List
+from transformers import PreTrainedTokenizer, AutoTokenizer
+from typing import List, Union
 import torch
 from logits_processor_zoo.utils import text_to_token, enforce_tokens
 
@@ -33,14 +33,17 @@ class TriggerPhraseLogitsProcessor:
     trigger_count (int): How many times the phrase will be triggered.
     trigger_after (bool): Whether the phrase is written after the trigger token or instead of the trigger token.
     """
-    def __init__(self, phrase: str, trigger_token_phrase: str, tokenizer: PreTrainedTokenizer, trigger_count: int = 1,
-                 trigger_after: bool = False):
+    def __init__(self, phrase: str, trigger_token_phrase: str, tokenizer: Union[PreTrainedTokenizer, str],
+                 trigger_count: int = 1, trigger_after: bool = False):
+        self.tokenizer = tokenizer
+        if isinstance(self.tokenizer, str):
+            self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer)
+
         self.phrase = phrase
         self.trigger_token_phrase = trigger_token_phrase
-        self.tokenizer = tokenizer
         self.trigger_count = trigger_count
-        self.trigger_token = text_to_token(tokenizer, trigger_token_phrase, last=False)
-        self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
+        self.trigger_token = text_to_token(self.tokenizer, trigger_token_phrase, last=False)
+        self.phrase_tokens = self.tokenizer.encode(phrase, add_special_tokens=False)
         self.initial_trigger_count = trigger_count
         self.trigger_after = trigger_after
         self._reset()

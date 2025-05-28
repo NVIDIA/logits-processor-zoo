@@ -15,9 +15,9 @@
 # limitations under the License.
 #
 
-from typing import List
+from typing import List, Union
 import torch
-from transformers import PreTrainedTokenizer
+from transformers import PreTrainedTokenizer, AutoTokenizer
 
 
 class CiteFromPromptLogitsProcessor:
@@ -33,11 +33,14 @@ class CiteFromPromptLogitsProcessor:
     boost_eos (bool, optional): If True, boosts EOS token too.
     conditional_boost_factor (float, optional): A factor to boost the likelihood of the tokens based on previous token.
     """
-    def __init__(self, tokenizer: PreTrainedTokenizer, boost_factor: float = 1.0, boost_eos: bool = True,
+    def __init__(self, tokenizer: Union[PreTrainedTokenizer, str], boost_factor: float = 1.0, boost_eos: bool = True,
                  conditional_boost_factor: float = 0.0):
         self.tokenizer = tokenizer
+        if isinstance(self.tokenizer, str):
+            self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer)
+
         self.boost_factor = boost_factor
-        self.eos_token_id = tokenizer.eos_token_id
+        self.eos_token_id = self.tokenizer.eos_token_id
         self.boost_eos = boost_eos
         self.conditional_boost_factor = conditional_boost_factor
 
