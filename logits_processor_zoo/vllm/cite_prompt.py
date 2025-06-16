@@ -44,10 +44,6 @@ class CiteFromPromptLogitsProcessor:
         self.boost_eos = boost_eos
         self.conditional_boost_factor = conditional_boost_factor
 
-    def clone(self):
-        return CiteFromPromptLogitsProcessor(self.tokenizer, self.boost_factor, self.boost_eos,
-                                             self.conditional_boost_factor)
-
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
         tokens = set(prompt_tokens_ids)
         if self.boost_eos:

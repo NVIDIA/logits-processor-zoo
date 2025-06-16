@@ -57,9 +57,6 @@ class MultipleChoiceLogitsProcessor:
         self.choice_tokens = [text_to_token(self.tokenizer, choice, last=False) for choice in choices]
         self.boost_first_words = boost_first_words
 
-    def clone(self):
-        return MultipleChoiceLogitsProcessor(self.tokenizer, self.choices, self.delimiter, self.boost_first_words)
-
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
 
         if self.boost_first_words:
