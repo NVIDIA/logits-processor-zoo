@@ -15,12 +15,17 @@
 # limitations under the License.
 #
 
-from .generation_length import GenLengthLogitsProcessor
-from .cite_prompt import CiteFromPromptLogitsProcessor
-from .last_phrase import ForceLastPhraseLogitsProcessor
-from .multiple_choice import MultipleChoiceLogitsProcessor
-from .trigger_phrase import TriggerPhraseLogitsProcessor
-from .prevent_hallucination import PreventHallucinationLogitsProcessor
+from logits_processor_zoo.transformers import PreventHallucinationLogitsProcessor
 
-__all__ = ['GenLengthLogitsProcessor', 'CiteFromPromptLogitsProcessor', 'ForceLastPhraseLogitsProcessor',
-           'MultipleChoiceLogitsProcessor', 'TriggerPhraseLogitsProcessor', 'PreventHallucinationLogitsProcessor']
+
+def test_gen_length_logits_processor(llm_runner):
+    example_prompts = [
+        "Please describe what macaques are.",
+        "Tell me a story about a kid lost in forest."
+    ]
+
+    logits_processors = [PreventHallucinationLogitsProcessor(llm_runner.tokenizer, batch_size=2,
+                                                             minp=0.99, tolerate=2)]
+    processed_gen_output = llm_runner.generate_response(example_prompts, logits_processors)
+
+    assert all(["I don't know" in out for out in processed_gen_output])
