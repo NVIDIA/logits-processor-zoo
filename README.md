@@ -15,6 +15,16 @@ Struggling to get LLMs to follow your instructions? LogitsProcessorZoo offers a 
 pip install logits-processor-zoo
 ```
 
+With vllm installation:
+```bash
+pip install logits-processor-zoo[vllm]
+```
+
+With tensorrt-llm installation:
+```bash
+pip install logits-processor-zoo[tensorrt-llm]
+```
+
 ## Supported Frameworks
 * transformers
 * vLLM

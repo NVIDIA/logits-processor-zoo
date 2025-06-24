@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "logits-processor-zoo"
-version = "0.1.11"
+version = "0.2.0"
 description = "A collection of LogitsProcessors to customize and enhance LLM behavior for specific tasks."
 authors = ["Ahmet Erdem", "Ivan Sorokin", "Maximilian Jeblick", "Darragh Hanley", "David Austin"]
 readme = "README.md"
@@ -11,9 +11,11 @@ torch = "*"
 transformers = ">=4.41.2"
 accelerate = ">=0.26.1"
 vllm = { version = ">=0.5.0.post1", optional = true }
+tensorrt-llm = { version = ">=0.20.0", optional = true}
 
 [tool.poetry.extras]
 vllm = ["vllm"]
+tensorrt-llm = ["tensorrt-llm"]
 
 
 [build-system]

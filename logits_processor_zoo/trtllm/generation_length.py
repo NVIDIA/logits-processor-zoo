@@ -18,10 +18,11 @@
 from typing import List, Optional
 from transformers import PreTrainedTokenizer
 import torch
+from tensorrt_llm.sampling_params import LogitsProcessor
 from logits_processor_zoo.utils import text_to_token
 
 
-class GenLengthLogitsProcessor:
+class GenLengthLogitsProcessor(LogitsProcessor):
     """
     A logits processor that adjusts the likelihood of the end-of-sequence (EOS) token
     based on the length of the generated sequence, encouraging or discouraging shorter answers.
@@ -48,19 +49,22 @@ class GenLengthLogitsProcessor:
         self.new_line_token = text_to_token(tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
 
-    def __call__(self, req_ids_batch: List[int], logits_batch: List[torch.Tensor],
-                 ids_batch: List[List[List[int]]], stream_ptr,
-                 client_ids_batch: List[Optional[int]]):
+    def __call__(self, req_id: int, logits: torch.Tensor,
+                 token_ids: List[List[int]], stream_ptr: Optional[int],
+                 client_id: Optional[int]) -> None:
 
         boost_val = self.boost_factor * (self.token_count ** self.p) / (10 ** self.p)
 
-        with torch.cuda.stream(torch.cuda.ExternalStream(stream_ptr)):
-            ids_batch = torch.LongTensor(ids_batch).to(logits_batch.device, non_blocking=True)
+        stream = None if stream_ptr is None else torch.cuda.ExternalStream(
+            stream_ptr)
+
+        with torch.cuda.stream(stream):
+            ids = torch.LongTensor(token_ids).to(logits.device, non_blocking=True)
 
             if self.complete_sentences:
-                enabled = (ids_batch[:, -1] == self.full_stop_token) | (ids_batch[:, -1] == self.new_line_token)
-                logits_batch[:, :, self.eos_token] += enabled * boost_val
+                enabled = (ids[:, -1] == self.full_stop_token) | (ids[:, -1] == self.new_line_token)
+                logits[:, :, self.eos_token] += enabled * boost_val
             else:
-                logits_batch[:, :, self.eos_token] += boost_val
+                logits[:, :, self.eos_token] += boost_val
 
         self.token_count += 1
