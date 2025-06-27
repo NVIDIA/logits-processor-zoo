@@ -11,11 +11,9 @@ torch = "*"
 transformers = ">=4.41.2"
 accelerate = ">=0.26.1"
 vllm = { version = ">=0.5.0.post1", optional = true }
-tensorrt-llm = { version = ">=0.20.0", optional = true}
 
 [tool.poetry.extras]
 vllm = ["vllm"]
-tensorrt-llm = ["tensorrt-llm"]
 
 
 [build-system]
