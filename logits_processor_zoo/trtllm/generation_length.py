@@ -58,8 +58,8 @@ class GenLengthLogitsProcessor(LogitsProcessor):
 
         boost_val = self.boost_factor * (self.token_count ** self.p) / (10 ** self.p)
 
-        stream = None if stream_ptr is None else torch.cuda.ExternalStream(
-            stream_ptr)
+        stream = None if stream_ptr is None else torch.cuda.ExternalStream(stream_ptr)
+
 
         with torch.cuda.stream(stream):
             ids = torch.LongTensor(token_ids).to(logits.device, non_blocking=True)

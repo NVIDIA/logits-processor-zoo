@@ -5,10 +5,12 @@ from utils import TRTLLMTester, get_parser
 
 if __name__ == "__main__":
     args = get_parser()
-    beam_width = 1
 
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    llm_tester = TRTLLMTester(args.model_name, args.backend)
 
-    lp = CiteFromPromptLogitsProcessor(tokenizer, [args.prompt], boost_factor=1.0)
+    lp = CiteFromPromptLogitsProcessor(tokenizer, boost_factor=1.0, boost_eos=False, conditional_boost_factor=3.0)
+    llm_tester.run([args.prompt], logits_processor=lp)
 
-    TRTLLMTester(lp, tokenizer, args).run(args.prompt, beam_width)
+    lp = CiteFromPromptLogitsProcessor(tokenizer, boost_factor=-1.0, boost_eos=False, conditional_boost_factor=-1.0)
+    llm_tester.run([args.prompt], logits_processor=lp)

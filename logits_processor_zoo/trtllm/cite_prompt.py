@@ -18,39 +18,57 @@
 from typing import List, Optional
 import torch
 from transformers import PreTrainedTokenizer
+from tensorrt_llm.sampling_params import LogitsProcessor
 
 
-class CiteFromPromptLogitsProcessor:
+class CiteFromPromptLogitsProcessor(LogitsProcessor):
     """
     A logits processor which boosts or diminishes the likelihood of tokens present in the prompt (and optionally
     EOS token) to encourage the model to generate tokens similar to those seen in the prompt or vice versa.
-    WARNING: Create a new object before every model.generate call since every batch has different prompts.
 
     Parameters
     ----------
     tokenizer (PreTrainedTokenizer): The tokenizer used by the LLM.
-    prompts (List[str]): Prompts in the batch.
     boost_factor (float): A factor to boost the likelihood of the tokens from the prompt.
                             Negative values are used for the opposite effect.
     boost_eos (bool, optional): If True, boosts EOS token too.
+    conditional_boost_factor (float, optional): A factor to boost the likelihood of the tokens based on previous token.
     """
-    def __init__(self, tokenizer: PreTrainedTokenizer, prompts: List[str], boost_factor: float = 1.0,
-                 boost_eos: bool = True):
+    def __init__(self, tokenizer: PreTrainedTokenizer, boost_factor: float = 1.0, boost_eos: bool = True,
+                 conditional_boost_factor: float = 0.0):
+        self.tokenizer = tokenizer
         self.boost_factor = boost_factor
+        self.eos_token_id = self.tokenizer.eos_token_id
+        self.boost_eos = boost_eos
+        self.conditional_boost_factor = conditional_boost_factor
+        self.first_token = True
+        self.prompt_token_ids = list()
 
-        self.boost_ids = []
-        for prompt in prompts:
-            prompt_tokens = set(tokenizer.encode(prompt))
+    def __call__(self, req_id: int, logits: torch.Tensor,
+                 token_ids: List[List[int]], stream_ptr: Optional[int],
+                 client_id: Optional[int]) -> None:
+        if self.first_token:
+            self.prompt_token_ids = list(token_ids[0]) # take first beam since all beams have the same prompt
+            self.first_token = False
 
-            if boost_eos:
-                prompt_tokens.add(tokenizer.eos_token_id)
+        tokens = set(self.prompt_token_ids)
+        if self.boost_eos:
+            tokens.add(self.eos_token_id)
 
-            self.boost_ids.append(list(prompt_tokens))
+        tokens = [t for t in tokens if t < logits.shape[-1]]
 
-    def __call__(self, req_ids_batch: List[int], logits_batch: List[torch.Tensor],
-                 ids_batch: List[List[List[int]]], stream_ptr,
-                 client_ids_batch: List[Optional[int]]):
+        stream = None if stream_ptr is None else torch.cuda.ExternalStream(stream_ptr)
 
-        with torch.cuda.stream(torch.cuda.ExternalStream(stream_ptr)):
-            for i in range(logits_batch.shape[1]):
-                logits_batch[:, i, self.boost_ids[i]] += self.boost_factor
+        with torch.cuda.stream(stream):
+            logits[:, :, tokens] += self.boost_factor
+
+            if self.conditional_boost_factor != 0:
+
+                for i in range(len(token_ids)): # iterate over beams
+                    tokens = set()
+                    for prompt_token_idx in range(len(self.prompt_token_ids) - 1):
+                        in_vocab = self.prompt_token_ids[prompt_token_idx + 1] < logits.shape[-1]
+                        last_token = self.prompt_token_ids[prompt_token_idx] == token_ids[i][-1]
+                        if last_token and in_vocab:
+                            tokens.add(self.prompt_token_ids[prompt_token_idx + 1])
+                    logits[:, i, list(tokens)] += self.conditional_boost_factor
