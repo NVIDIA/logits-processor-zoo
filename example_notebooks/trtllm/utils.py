@@ -3,22 +3,34 @@ from typing import List
 from tensorrt_llm.sampling_params import SamplingParams, LogitsProcessor
 
 class TRTLLMTester:
-    def __init__(self, model_name: str = "Qwen/Qwen2.5-1.5B-Instruct", backend: str = "tensorrt-llm",
-                 logits_processor: LogitsProcessor = None):
+    def __init__(self, model_name: str = "Qwen/Qwen2.5-1.5B-Instruct", backend: str = "tensorrt-llm"):
         if backend == "pytorch":
             from tensorrt_llm._torch import LLM
         else:
             from tensorrt_llm import LLM
 
         self.llm = LLM(model=model_name)
-        self.lp = logits_processor
 
-    def run(self, prompts: List[str], max_tokens: int = 256):
+    def run(self, prompts: List[str], max_tokens: int = 256, logits_processor: LogitsProcessor = None):
         sparams = {"top_k": 1, "max_tokens": max_tokens, "temperature": 0.001}
-        if self.lp:
-            sparams["logits_processor"] = self.lp
-        output = self.llm.generate(prompts, SamplingParams(**sparams))
-        print(output)
+        if logits_processor:
+            sparams["logits_processor"] = logits_processor
+
+        prompts_with_template = []
+        for prompt in prompts:
+            messages = [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+            text = self.llm.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            prompts_with_template.append(text)
+
+        gens = self.llm.generate(prompts_with_template, SamplingParams(**sparams))
+        for prompt, gen in zip(prompts, gens):
+            print(prompt)
+            print(gen.outputs[0].text)
 
 
 def get_parser():
