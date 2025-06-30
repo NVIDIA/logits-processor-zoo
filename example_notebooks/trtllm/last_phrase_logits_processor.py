@@ -5,12 +5,11 @@ from utils import TRTLLMTester, get_parser
 
 if __name__ == "__main__":
     args = get_parser()
-    beam_width = 1
 
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    llm_tester = TRTLLMTester(args.model_name, args.backend)
 
     phrase = "\n\nThanks for trying our application! If you have more questions about"
+    lp = ForceLastPhraseLogitsProcessor(phrase, tokenizer)
 
-    lp = ForceLastPhraseLogitsProcessor(phrase, tokenizer, batch_size=1)
-
-    TRTLLMTester(lp, tokenizer, args).run(args.prompt, beam_width)
+    llm_tester.run([args.prompt], logits_processor=lp)

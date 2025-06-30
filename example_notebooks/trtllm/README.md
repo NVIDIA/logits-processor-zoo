@@ -15,4 +15,5 @@ python example_notebooks/trtllm/cite_prompt_logits_processor.py -p "    Retrieve
     The franchise's target audience is children aged 5 to 12, but it is known to attract people of all ages.
     
     Can you shortly describe what Pokémon is?"
+python example_notebooks/trtllm/last_phrase_logits_processor.py
 ```
