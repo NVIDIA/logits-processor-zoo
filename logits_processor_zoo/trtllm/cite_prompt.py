@@ -41,15 +41,16 @@ class CiteFromPromptLogitsProcessor(LogitsProcessor):
         self.eos_token_id = self.tokenizer.eos_token_id
         self.boost_eos = boost_eos
         self.conditional_boost_factor = conditional_boost_factor
-        self.first_token = True
-        self.prompt_token_ids = list()
+        self.prompt_token_ids = None
+
+    def _init_before_gen(self, token_ids):
+        self.prompt_token_ids = list(token_ids[0])  # take first beam since all beams have the same prompt
 
     def __call__(self, req_id: int, logits: torch.Tensor,
                  token_ids: List[List[int]], stream_ptr: Optional[int],
                  client_id: Optional[int]) -> None:
-        if self.first_token:
-            self.prompt_token_ids = list(token_ids[0])  # take first beam since all beams have the same prompt
-            self.first_token = False
+        if self.prompt_token_ids is None:
+            self._init_before_gen(token_ids)
 
         tokens = set(self.prompt_token_ids)
         if self.boost_eos:

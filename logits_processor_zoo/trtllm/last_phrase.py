@@ -35,16 +35,17 @@ class ForceLastPhraseLogitsProcessor(LogitsProcessor):
     def __init__(self, phrase: str, tokenizer: PreTrainedTokenizer):
         self.eos_token_id = tokenizer.eos_token_id
         self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
-        self.first_token = True
         self.iterators = None
+
+    def _init_before_gen(self, beam_width):
+        self.iterators = torch.zeros(beam_width, dtype=torch.int32)
 
     def __call__(self, req_id: int, logits: torch.Tensor,
                  token_ids: List[List[int]], stream_ptr: Optional[int],
                  client_id: Optional[int]) -> None:
         beam_width = len(token_ids)
-        if self.first_token:
-            self.iterators = torch.zeros(beam_width, dtype=torch.int32)
-            self.first_token = False
+        if self.iterators is None:
+            self._init_before_gen(beam_width)
 
         stream = None if stream_ptr is None else torch.cuda.ExternalStream(stream_ptr)
 
