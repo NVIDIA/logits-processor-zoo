@@ -48,7 +48,7 @@ class CiteFromPromptLogitsProcessor(LogitsProcessor):
                  token_ids: List[List[int]], stream_ptr: Optional[int],
                  client_id: Optional[int]) -> None:
         if self.first_token:
-            self.prompt_token_ids = list(token_ids[0]) # take first beam since all beams have the same prompt
+            self.prompt_token_ids = list(token_ids[0])  # take first beam since all beams have the same prompt
             self.first_token = False
 
         tokens = set(self.prompt_token_ids)
@@ -64,7 +64,7 @@ class CiteFromPromptLogitsProcessor(LogitsProcessor):
 
             if self.conditional_boost_factor != 0:
 
-                for i in range(len(token_ids)): # iterate over beams
+                for i in range(len(token_ids)):  # iterate over beams
                     tokens = set()
                     for prompt_token_idx in range(len(self.prompt_token_ids) - 1):
                         in_vocab = self.prompt_token_ids[prompt_token_idx + 1] < logits.shape[-1]

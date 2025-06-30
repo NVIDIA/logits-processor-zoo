@@ -60,7 +60,6 @@ class GenLengthLogitsProcessor(LogitsProcessor):
 
         stream = None if stream_ptr is None else torch.cuda.ExternalStream(stream_ptr)
 
-
         with torch.cuda.stream(stream):
             ids = torch.LongTensor(token_ids).to(logits.device, non_blocking=True)
 

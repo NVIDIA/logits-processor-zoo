@@ -2,6 +2,7 @@ import argparse
 from typing import List
 from tensorrt_llm.sampling_params import SamplingParams, LogitsProcessor
 
+
 class TRTLLMTester:
     def __init__(self, model_name: str = "Qwen/Qwen2.5-1.5B-Instruct", backend: str = "tensorrt-llm"):
         if backend == "pytorch":
