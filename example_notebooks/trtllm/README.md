@@ -26,4 +26,6 @@ python example_notebooks/trtllm/multiple_choice_logits_processor.py -p "I am get
 3. Battery"
 
 python example_notebooks/trtllm/prevent_hallucination_logits_processor.py -p "Tell me the Nobel Prizes in 1977"
+
+python example_notebooks/trtllm/trigger_phrase_logits_processor.py -p "Generate a python function to calculate nth fibonacci number. Make it recursive. Keep thinking short."
 ```

@@ -55,7 +55,7 @@ class TriggerPhraseLogitsProcessor(BaseLogitsProcessor):
             if scores[i, :].argmax() == self.trigger_token and it == -1:
                 self.iterators[i] = 0
                 if not self.trigger_after:
-                    scores[i] = enforce_tokens(scores[i], [self.phrase_tokens[it]])
+                    scores[i] = enforce_tokens(scores[i], [self.phrase_tokens[0]])
                     self.iterators[i] += 1
             elif len(self.phrase_tokens) > it >= 0:
                 scores[i] = enforce_tokens(scores[i], [self.phrase_tokens[it]])
