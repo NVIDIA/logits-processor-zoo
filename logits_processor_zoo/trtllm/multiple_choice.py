@@ -18,10 +18,11 @@
 from transformers import PreTrainedTokenizer
 from typing import List, Optional
 import torch
-from logits_processor_zoo.utils import text_to_token, get_new_line_tokens
+from logits_processor_zoo.utils import text_to_token, get_new_line_tokens, enforce_tokens
+from tensorrt_llm.sampling_params import LogitsProcessor
 
 
-class MultipleChoiceLogitsProcessor:
+class MultipleChoiceLogitsProcessor(LogitsProcessor):
     """
     A logits processor to answer multiple choice questions with one of the choices.
     A multiple choice question is like:
@@ -50,38 +51,42 @@ class MultipleChoiceLogitsProcessor:
         self.delimiter_token = text_to_token(tokenizer, delimiter, last=False)
         self.choice_tokens = [text_to_token(tokenizer, choice, last=False) for choice in choices]
         self.boost_first_words = boost_first_words
-        self.very_large_number = 999
+        self.first_tokens = list()
 
-    def __call__(self, req_ids_batch: List[int], logits_batch: List[torch.Tensor],
-                 ids_batch: List[List[List[int]]], stream_ptr,
-                 client_ids_batch: List[Optional[int]]):
+    def _init_choice_first_words(self, prompt_token_ids):
+        choice = 0
 
-        if self.boost_first_words:
-            with torch.cuda.stream(torch.cuda.ExternalStream(stream_ptr)):
-                ids_batch = torch.LongTensor(ids_batch).to(logits_batch.device, non_blocking=True)
+        first_tokens = []
+        for i in range(len(prompt_token_ids) - 3):
+            # A choice is like "\nA) hair dryer", where first token is "hair"
+            choice_starts = (
+                    (prompt_token_ids[i] in self.new_line_tokens) and
+                    (prompt_token_ids[i + 1] == self.choice_tokens[choice]) and
+                    (prompt_token_ids[i + 2] == self.delimiter_token)
+            )
 
-                for row_ind in range(ids_batch.shape[0]):
-                    if self.boost_first_words:
-                        choice = 0
+            if choice_starts:
+                first_tokens.append(prompt_token_ids[i + 3])
+                choice += 1
 
-                        first_tokens = []
-                        for i in range(len(ids_batch[row_ind]) - 3):
-                            # A choice is like "\nA) hair dryer", where first token is "hair"
-                            choice_starts = (
-                                    (ids_batch[row_ind, i].item() in self.new_line_tokens) and
-                                    (ids_batch[row_ind, i + 1] == self.choice_tokens[choice]) and
-                                    (ids_batch[row_ind, i + 2] == self.delimiter_token)
-                            )
+                if choice >= len(self.choice_tokens):
+                    break
+        return first_tokens
 
-                            if choice_starts:
-                                first_tokens.append(ids_batch[row_ind, i + 3])
-                                choice += 1
+    def __call__(self, req_id: int, logits: torch.Tensor,
+                 token_ids: List[List[int]], stream_ptr: Optional[int],
+                 client_id: Optional[int]) -> None:
 
-                                if choice >= len(self.choice_tokens):
-                                    break
+        if len(self.first_tokens) == 0 and self.boost_first_words:
+            prompt_token_ids = list(token_ids[0])  # take first beam since all beams have the same prompt
+            self.first_tokens = self._init_choice_first_words(prompt_token_ids)
 
-                        boost = self.boost_first_words * logits_batch[:, row_ind, first_tokens]
-                        logits_batch[:, row_ind, self.choice_tokens[:len(first_tokens)]] += boost
+        beam_width = len(token_ids)
+        stream = None if stream_ptr is None else torch.cuda.ExternalStream(stream_ptr)
 
-        with torch.cuda.stream(torch.cuda.ExternalStream(stream_ptr)):
-            logits_batch[:, :, self.choice_tokens] += self.very_large_number
+        with torch.cuda.stream(stream):
+            if len(self.first_tokens) > 0:
+                boost = self.boost_first_words * logits[0, :, self.first_tokens]
+                logits[0, :, self.choice_tokens[:len(self.first_tokens)]] += boost
+            for i in range(beam_width):  # iterate over beams
+                enforce_tokens(logits[0, i], self.choice_tokens)

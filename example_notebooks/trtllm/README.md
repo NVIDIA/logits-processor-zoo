@@ -16,4 +16,9 @@ python example_notebooks/trtllm/cite_prompt_logits_processor.py -p "    Retrieve
     
     Can you shortly describe what Pokémon is?"
 python example_notebooks/trtllm/last_phrase_logits_processor.py
+python example_notebooks/trtllm/multiple_choice_logits_processor.py -p "I am getting a lot of calls during the day. What is more important for me to consider when I buy a new phone?
+0. Camera
+1. Screen resolution
+2. Operating System
+3. Battery"
 ```

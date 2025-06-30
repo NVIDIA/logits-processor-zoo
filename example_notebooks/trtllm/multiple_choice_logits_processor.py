@@ -5,10 +5,12 @@ from utils import TRTLLMTester, get_parser
 
 if __name__ == "__main__":
     args = get_parser()
-    beam_width = 1
 
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    llm_tester = TRTLLMTester(args.model_name, args.backend)
 
-    lp = MultipleChoiceLogitsProcessor(tokenizer, choices=["1", "2"], delimiter=".", boost_first_words=0.5)
+    lp = mclp = MultipleChoiceLogitsProcessor(tokenizer, choices=["0", "1", "2", "3"])
+    llm_tester.run([args.prompt], logits_processor=lp, max_tokens=1)
 
-    TRTLLMTester(lp, tokenizer, args).run(args.prompt, beam_width, max_new_tokens=1)
+    lp = MultipleChoiceLogitsProcessor(tokenizer, choices=["0", "1", "2", "3"], delimiter=".", boost_first_words=2.0)
+    llm_tester.run([args.prompt], logits_processor=lp, max_tokens=1)
