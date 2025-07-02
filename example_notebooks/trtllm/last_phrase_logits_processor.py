@@ -7,7 +7,7 @@ if __name__ == "__main__":
     args = get_parser()
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    llm_tester = TRTLLMTester(args.model_name, args.backend)
+    llm_tester = TRTLLMTester(args.model_name)
 
     phrase = "\n\nThanks for trying our application! If you have more questions about"
     lp = ForceLastPhraseLogitsProcessor(phrase, tokenizer)

@@ -7,7 +7,7 @@ if __name__ == "__main__":
     args = get_parser()
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    llm_tester = TRTLLMTester(args.model_name, args.backend)
+    llm_tester = TRTLLMTester(args.model_name)
 
     lp = TriggerPhraseLogitsProcessor("...Wait, let me think more.", " function", tokenizer,
                                       trigger_count=2, trigger_after=False)

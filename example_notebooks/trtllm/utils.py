@@ -4,10 +4,11 @@ from tensorrt_llm.sampling_params import SamplingParams, LogitsProcessor
 
 
 class TRTLLMTester:
-    def __init__(self, model_name: str = "Qwen/Qwen2.5-1.5B-Instruct", backend: str = "tensorrt-llm"):
-        if backend == "pytorch":
+    def __init__(self, model_name: str = "Qwen/Qwen2.5-1.5B-Instruct"):
+        # Temporarily attempt to import the torch backend until it becomes default
+        try:
             from tensorrt_llm._torch import LLM
-        else:
+        except ImportError:
             from tensorrt_llm import LLM
 
         self.llm = LLM(model=model_name)
@@ -41,11 +42,6 @@ def get_parser():
                         type=str,
                         default="Qwen/Qwen2.5-1.5B-Instruct",
                         help="Directory or HF link containing model")
-    parser.add_argument("--backend",
-                        "-b",
-                        type=str,
-                        default="tensorrt-llm",
-                        help="TensorRT-LLM backend")
     parser.add_argument("--prompt",
                         "-p",
                         type=str,

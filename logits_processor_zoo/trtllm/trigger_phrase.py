@@ -66,7 +66,6 @@ class TriggerPhraseLogitsProcessor(LogitsProcessor):
 
                 if logits[0, i].argmax() == self.trigger_token and current_index == -1:
                     self.iterators[i] = 0
-                    print("triggering...")
                     if not self.trigger_after:
                         enforce_tokens(logits[0, i], [self.phrase_tokens[0]])
                         self.iterators[i] += 1
