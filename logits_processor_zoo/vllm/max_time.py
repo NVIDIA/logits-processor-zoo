@@ -56,17 +56,11 @@ class MaxTimeLogitProcessor:
         self.boost_token = self.tokenizer.eos_token_id
         self.boost_token_str = boost_token_str
         if boost_token_str is not None:
-            self.boost_token = text_to_token(
-                self.tokenizer, boost_token_str, last=False
-            )
+            self.boost_token = text_to_token(self.tokenizer, boost_token_str, last=False)
         self.boost_factor = boost_factor
         self.p = p
-        self.full_stop_token = text_to_token(
-            self.tokenizer, "It is a sentence.", last=True
-        )
-        self.new_line_token = text_to_token(
-            self.tokenizer, "It is a new line\n", last=True
-        )
+        self.full_stop_token = text_to_token(self.tokenizer, "It is a sentence.", last=True)
+        self.new_line_token = text_to_token(self.tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
         self.max_time = max_time
         self._reset()
@@ -100,7 +94,6 @@ class MaxTimeLogitProcessor:
         boost_val = 0
         if not (self.boost_token in past_token_ids):
             boost_val = self.boost_factor * (elapsed_time**self.p) / (self.max_time**self.p)
-            
 
         enabled = True
         if self.complete_sentences and gen_length > 0:

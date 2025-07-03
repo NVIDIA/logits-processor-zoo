@@ -39,9 +39,16 @@ class MaxTimeLogitsProcessor(LogitsProcessor):
     boost_token_str (str, optional): A string to be tokenized and used instead of EOS. Especially useful for </think>.
     max_time (float): Maximum time in seconds after which the EOS token must be forced.
     """
-    def __init__(self, tokenizer: PreTrainedTokenizer, boost_factor: float,
-                 p: int = 2, complete_sentences: bool = False, boost_token_str: str = None,
-                 max_time: float = 10.0):
+
+    def __init__(
+        self,
+        tokenizer: PreTrainedTokenizer,
+        boost_factor: float,
+        p: int = 2,
+        complete_sentences: bool = False,
+        boost_token_str: str = None,
+        max_time: float = 10.0,
+    ):
 
         self.tokenizer = tokenizer
         self.boost_token = self.tokenizer.eos_token_id
@@ -57,13 +64,18 @@ class MaxTimeLogitsProcessor(LogitsProcessor):
         self.max_time = max_time
         self.start_time = time.time()
 
-    def __call__(self, req_id: int, logits: torch.Tensor,
-                 token_ids: List[List[int]], stream_ptr: Optional[int],
-                 client_id: Optional[int]) -> None:
+    def __call__(
+        self,
+        req_id: int,
+        logits: torch.Tensor,
+        token_ids: List[List[int]],
+        stream_ptr: Optional[int],
+        client_id: Optional[int],
+    ) -> None:
 
         elapsed_time = time.time() - self.start_time
         time_exceeded = elapsed_time > self.max_time
-        boost_val = self.boost_factor * (elapsed_time ** self.p) / (self.max_time ** self.p)
+        boost_val = self.boost_factor * (elapsed_time**self.p) / (self.max_time**self.p)
 
         stream = None if stream_ptr is None else torch.cuda.ExternalStream(stream_ptr)
 
@@ -73,9 +85,9 @@ class MaxTimeLogitsProcessor(LogitsProcessor):
             enabled = True
             if self.complete_sentences:
                 enabled = (ids[:, -1] == self.full_stop_token) | (ids[:, -1] == self.new_line_token)
-            
+
             if time_exceeded and enabled:
-                logits[:, :, self.boost_token] = float('inf')
+                logits[:, :, self.boost_token] = float("inf")
             else:
                 logits[:, :, self.boost_token] += enabled * boost_val
 
