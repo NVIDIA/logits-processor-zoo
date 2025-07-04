@@ -21,6 +21,8 @@ from .last_phrase import ForceLastPhraseLogitsProcessor
 from .multiple_choice import MultipleChoiceLogitsProcessor
 from .trigger_phrase import TriggerPhraseLogitsProcessor
 from .prevent_hallucination import PreventHallucinationLogitsProcessor
+from .max_time import MaxTimeLogitProcessor
 
 __all__ = ['GenLengthLogitsProcessor', 'CiteFromPromptLogitsProcessor', 'ForceLastPhraseLogitsProcessor',
-           'MultipleChoiceLogitsProcessor', 'TriggerPhraseLogitsProcessor', 'PreventHallucinationLogitsProcessor']
+           'MultipleChoiceLogitsProcessor', 'TriggerPhraseLogitsProcessor', 'PreventHallucinationLogitsProcessor',
+           'MaxTimeLogitProcessor']

@@ -9,9 +9,15 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     llm_tester = TRTLLMTester(args.model_name)
 
-    lp = TriggerPhraseLogitsProcessor("...Wait, let me think more.", " function", tokenizer,
-                                      trigger_count=2, trigger_after=False)
+    lp = TriggerPhraseLogitsProcessor(
+        tokenizer, "...Wait, let me think more.", " function", trigger_count=2, trigger_after=False
+    )
     llm_tester.run([args.prompt], logits_processor=lp)
 
-    lp = TriggerPhraseLogitsProcessor("\n```python", " function", tokenizer, trigger_count=1, trigger_after=True)
+    lp = TriggerPhraseLogitsProcessor(tokenizer, "\n```python", " function", trigger_count=1, trigger_after=True)
+    llm_tester.run([args.prompt], logits_processor=lp)
+
+    lp = TriggerPhraseLogitsProcessor(
+        tokenizer, "<interruption> only a few seconds left...", trigger_time=2, trigger_count=1, trigger_after=True
+    )
     llm_tester.run([args.prompt], logits_processor=lp)
