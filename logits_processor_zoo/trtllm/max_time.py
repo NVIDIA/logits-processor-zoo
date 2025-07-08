@@ -20,43 +20,35 @@ import time
 from transformers import PreTrainedTokenizer
 import torch
 from tensorrt_llm.sampling_params import LogitsProcessor
-from logits_processor_zoo.utils import text_to_token
+from logits_processor_zoo.utils import text_to_token, enforce_tokens
 
 
 class MaxTimeLogitsProcessor(LogitsProcessor):
     """
-    A logits processor that adjusts the likelihood of the end-of-sequence (EOS) token
-    based on the length of the generated sequence, encouraging or discouraging shorter answers.
+    A logits processor that enforces the end-of-sentence (EOS) token after a specified maximum time passes.
+    Useful for controlling generation time and ensuring responses complete within time constraints.
 
     Parameters
     ----------
     tokenizer (PreTrainedTokenizer): The tokenizer used by the LLM.
-    boost_factor (float): A factor to boost the likelihood of the EOS token as the sequence length increases.
-                        Suggested value range is [-1.0, 1.0]. Negative values are used for the opposite effect.
-    p (int, optional): The power to which the token count is raised when computing the boost value. Default is 2.
-    complete_sentences (bool, optional): If True, boosts EOS token likelihood only when the last token is a full stop
+    max_time (float): Maximum time (wall-clock time) in seconds after which the EOS token must be enforced.
+    complete_sentences (bool, optional): If True, enforces EOS token only when the last token is a full stop
                                         or a new line. Default is False.
-    boost_token_str (str, optional): A string to be tokenized and used instead of EOS. Especially useful for </think>.
-    max_time (float): Maximum time in seconds after which the EOS token must be forced.
+    boost_token_str (str, optional): A string to be tokenized and used instead of EOS.
     """
 
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,
-        boost_factor: float,
-        p: int = 2,
+        max_time: float,
         complete_sentences: bool = False,
         boost_token_str: str = None,
-        max_time: float = 10.0,
     ):
-
         self.tokenizer = tokenizer
         self.boost_token = self.tokenizer.eos_token_id
         self.boost_token_str = boost_token_str
         if boost_token_str is not None:
             self.boost_token = text_to_token(self.tokenizer, boost_token_str, last=False)
-        self.boost_factor = boost_factor
-        self.p = p
         self.full_stop_token = text_to_token(self.tokenizer, "It is a sentence.", last=True)
         self.new_line_token = text_to_token(self.tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
@@ -75,7 +67,6 @@ class MaxTimeLogitsProcessor(LogitsProcessor):
 
         elapsed_time = time.time() - self.start_time
         time_exceeded = elapsed_time > self.max_time
-        boost_val = self.boost_factor * (elapsed_time**self.p) / (self.max_time**self.p)
 
         stream = None if stream_ptr is None else torch.cuda.ExternalStream(stream_ptr)
 
@@ -87,8 +78,8 @@ class MaxTimeLogitsProcessor(LogitsProcessor):
                 enabled = (ids[:, -1] == self.full_stop_token) | (ids[:, -1] == self.new_line_token)
 
             if time_exceeded and enabled:
-                logits[:, :, self.boost_token] = float("inf")
-            else:
-                logits[:, :, self.boost_token] += enabled * boost_val
+                # enforce the EOS token
+                for i in range(logits.shape[1]):
+                    enforce_tokens(logits[0, i], [self.boost_token])
 
         self.token_count += 1

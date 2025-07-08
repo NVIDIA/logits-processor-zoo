@@ -19,30 +19,28 @@ import time
 import torch
 from transformers import PreTrainedTokenizer
 from logits_processor_zoo.transformers.base import BaseLogitsProcessor
-from logits_processor_zoo.utils import text_to_token
+from logits_processor_zoo.utils import text_to_token, enforce_tokens
 
 
-class MaxTimeLogitProcessor(BaseLogitsProcessor):
+class MaxTimeLogitsProcessor(BaseLogitsProcessor):
     """
-    A logits processor that increases the probability of generating the EOS token with time.
-    The logit of the EOS token is boosted with an exponential function.
-    After N seconds pass, the EOS token is forced.
+    A logits processor that enforces the end-of-sentence (EOS) token after a specified maximum time passes.
+    Useful for controlling generation time and ensuring responses complete within time constraints.
+
     Parameters
     ----------
-    max_time (float): Maximum time in seconds after which the EOS token must be forced.
     tokenizer (PreTrainedTokenizer): The tokenizer used by the LLM.
-    boost_factor (float): A factor to boost the likelihood of the EOS token over time. Default is 1.0.
-    complete_sentences (bool, optional): If True, boosts EOS token likelihood only when the last token is a full stop
+    max_time (float): Maximum time (wall-clock time) in seconds after which the EOS token must be enforced.
+    complete_sentences (bool, optional): If True, enforces EOS token only when the last token is a full stop
                                         or a new line. Default is False.
-    boost_token_str (str, optional): A string to be tokenized and used instead of EOS. Especially useful for </think>.
+    boost_token_str (str, optional): A string to be tokenized and used instead of EOS.
+
     """
 
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,
         max_time: float,
-        boost_factor: float,
-        p: int = 2,
         complete_sentences: bool = False,
         boost_token_str: str = None,
     ):
@@ -51,8 +49,6 @@ class MaxTimeLogitProcessor(BaseLogitsProcessor):
         if boost_token_str is not None:
             self.boost_token = text_to_token(tokenizer, boost_token_str, last=False)
         self.max_time = max_time
-        self.boost_factor = boost_factor
-        self.p = p
         self.full_stop_token = text_to_token(tokenizer, "It is a sentence.", last=True)
         self.new_line_token = text_to_token(tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
@@ -60,26 +56,20 @@ class MaxTimeLogitProcessor(BaseLogitsProcessor):
     def _reset(self):
         self.start_time = time.time()
 
-    def _process(
-        self, input_ids: torch.LongTensor, scores: torch.FloatTensor
-    ) -> torch.Tensor:
+    def _process(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
         elapsed_time = time.time() - self.start_time
         token_count = input_ids.shape[1] - self.prompt_token_ids.shape[1]
 
         enabled = (input_ids[:, -token_count:] == self.boost_token).sum(dim=1) == 0
         if self.complete_sentences:
             enabled = enabled & (
-                (input_ids[:, -1] == self.full_stop_token)
-                | (input_ids[:, -1] == self.new_line_token)
+                (input_ids[:, -1] == self.full_stop_token) | (input_ids[:, -1] == self.new_line_token)
             )
 
         if elapsed_time > self.max_time:
-            boost_val = float("inf")
-        else:
-            boost_val = (
-                self.boost_factor * (elapsed_time**self.p) / (self.max_time**self.p)
-            )
-
-        scores[:, self.boost_token] += enabled * boost_val
+            for i in range(scores.shape[0]):
+                if enabled[i]:
+                    scores[i] = enforce_tokens(scores[i], [self.boost_token])
+            return scores
 
         return scores

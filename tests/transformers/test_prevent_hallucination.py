@@ -19,13 +19,9 @@ from logits_processor_zoo.transformers import PreventHallucinationLogitsProcesso
 
 
 def test_gen_length_logits_processor(llm_runner):
-    example_prompts = [
-        "Please describe what macaques are.",
-        "Tell me a story about a kid lost in forest."
-    ]
+    example_prompts = ["Please describe what macaques are.", "Tell me a story about a kid lost in forest."]
 
-    logits_processors = [PreventHallucinationLogitsProcessor(llm_runner.tokenizer, batch_size=2,
-                                                             minp=0.99, tolerate=2)]
+    logits_processors = [PreventHallucinationLogitsProcessor(llm_runner.tokenizer, batch_size=2, minp=0.99, tolerate=2)]
     processed_gen_output = llm_runner.generate_response(example_prompts, logits_processors)
 
     assert all(["I don't know" in out for out in processed_gen_output])

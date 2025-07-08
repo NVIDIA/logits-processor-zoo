@@ -81,7 +81,7 @@ I am getting a lot of calls during the day. What is more important for me to con
 The goal is to make LLM generate "3" as an answer.
 
 ### TriggerPhraseLogitsProcessor
-A logits processor which triggers phrases when it encounters a given token.
+A logits processor which triggers phrases when it encounters a given token or after a specified time.
 One common use case is to force writing python code just after thinking:
 ```python
 trigger_python = TriggerPhraseLogitsProcessor(phrase="\n```python", trigger_token_phrase="</think>", 
@@ -89,3 +89,6 @@ trigger_python = TriggerPhraseLogitsProcessor(phrase="\n```python", trigger_toke
 ```
 ### PreventHallucinationLogitsProcessor
 A logits processor that mitigates hallucinated model outputs by enforcing a predefined fallback phrase when token confidence falls below a specified threshold.
+
+### MaxTimeLogitsProcessor
+A logits processor that enforces the end-of-sentence (EOS) token after a specified maximum time passes, optionally waiting for a new line or a full stop. Useful for controlling generation time and ensuring responses complete within time constraints.

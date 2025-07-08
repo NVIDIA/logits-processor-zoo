@@ -22,21 +22,18 @@ from transformers import PreTrainedTokenizer, AutoTokenizer
 from logits_processor_zoo.utils import text_to_token, enforce_tokens
 
 
-class MaxTimeLogitProcessor:
+class MaxTimeLogitsProcessor:
     """
-    A logits processor that increases the probability of generating the EOS token with time.
-    The logit of the EOS token is boosted with an exponential function.
-    After N seconds pass, the EOS token is forced.
-    Optionally, after K < N seconds, we can trigger a sentence that forces the model to finish quickly.
+    A logits processor that enforces the end-of-sentence (EOS) token after a specified maximum time passes.
+    Useful for controlling generation time and ensuring responses complete within time constraints.
 
     Parameters
     ----------
-    max_time (float): Maximum time in seconds after which the EOS token must be forced.
     tokenizer (PreTrainedTokenizer): The tokenizer used by the LLM.
-    boost_factor (float): A factor to boost the likelihood of the EOS token over time. Default is 1.0.
-    complete_sentences (bool, optional): If True, boosts EOS token likelihood only when the last token is a full stop
+    max_time (float): Maximum time (wall-clock time) in seconds after which the EOS token must be enforced.
+    complete_sentences (bool, optional): If True, enforces EOS token only when the last token is a full stop
                                         or a new line. Default is False.
-    boost_token_str (str, optional): A string to be tokenized and used instead of EOS. Especially useful for </think>.
+    boost_token_str (str, optional): A string to be tokenized and used instead of EOS.
 
     """
 
@@ -44,8 +41,6 @@ class MaxTimeLogitProcessor:
         self,
         tokenizer: PreTrainedTokenizer,
         max_time: float,
-        boost_factor: float,
-        p: int = 2,
         complete_sentences: bool = False,
         boost_token_str: str = None,
     ):
@@ -57,8 +52,6 @@ class MaxTimeLogitProcessor:
         self.boost_token_str = boost_token_str
         if boost_token_str is not None:
             self.boost_token = text_to_token(self.tokenizer, boost_token_str, last=False)
-        self.boost_factor = boost_factor
-        self.p = p
         self.full_stop_token = text_to_token(self.tokenizer, "It is a sentence.", last=True)
         self.new_line_token = text_to_token(self.tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
@@ -68,11 +61,9 @@ class MaxTimeLogitProcessor:
     # Mutable logits processor gets cloned for each prompt in a batch in order to prevent updating the same object
     # https://github.com/vllm-project/vllm/blob/19dcc02a72e3ed52e3bf95aae44ea1f40ce42ea0/vllm/sampling_params.py#L537-L550
     def clone(self):
-        return MaxTimeLogitProcessor(
+        return MaxTimeLogitsProcessor(
             self.tokenizer,
             self.max_time,
-            self.boost_factor,
-            self.p,
             self.complete_sentences,
             self.boost_token_str,
         )
@@ -91,17 +82,13 @@ class MaxTimeLogitProcessor:
         time_exceeded = elapsed_time > self.max_time
         gen_length = len(past_token_ids)
 
-        boost_val = 0
-        if not (self.boost_token in past_token_ids):
-            boost_val = self.boost_factor * (elapsed_time**self.p) / (self.max_time**self.p)
-
         enabled = True
         if self.complete_sentences and gen_length > 0:
-            enabled = (past_token_ids[-1] == self.full_stop_token) | (past_token_ids[-1] == self.new_line_token)
+            enabled = (past_token_ids[-1] == self.full_stop_token) | (
+                past_token_ids[-1] == self.new_line_token
+            )
 
         if time_exceeded and enabled:
             scores = enforce_tokens(scores, [self.boost_token])
-        else:
-            scores[self.boost_token] += enabled * boost_val
 
         return scores
