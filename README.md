@@ -56,7 +56,7 @@ gen_output = model.generate(
 ```
 
 
-For the detailed examples in each framework, please have a look at **example_notebook** directory.
+For the detailed examples in each framework, please have a look at **lpz_examples** directory.
 
 ## Available Logits Processors
 
