@@ -20,10 +20,10 @@ import time
 from transformers import PreTrainedTokenizer
 import torch
 from tensorrt_llm.sampling_params import LogitsProcessor
-from logits_processor_zoo.utils import text_to_token, enforce_tokens
+from logits_processor_zoo.utils import text_to_token, enforce_tokens, SentenceChecker
 
 
-class MaxTimeLogitsProcessor(LogitsProcessor):
+class MaxTimeLogitsProcessor(LogitsProcessor, SentenceChecker):
     """
     A logits processor that enforces the end-of-sentence (EOS) token after a specified maximum time passes.
     Useful for controlling generation time and ensuring responses complete within time constraints.
@@ -44,6 +44,7 @@ class MaxTimeLogitsProcessor(LogitsProcessor):
         complete_sentences: bool = False,
         boost_token_str: str = None,
     ):
+        SentenceChecker.__init__(self, tokenizer)
         self.tokenizer = tokenizer
         self.boost_token = self.tokenizer.eos_token_id
         self.boost_token_str = boost_token_str
@@ -75,7 +76,7 @@ class MaxTimeLogitsProcessor(LogitsProcessor):
 
             enabled = True
             if self.complete_sentences:
-                enabled = (ids[:, -1] == self.full_stop_token) | (ids[:, -1] == self.new_line_token)
+                enabled = self._check_sentence_end(ids)
 
             if time_exceeded and enabled:
                 # enforce the EOS token

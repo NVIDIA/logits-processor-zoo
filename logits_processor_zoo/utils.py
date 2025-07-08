@@ -16,7 +16,7 @@
 #
 
 from transformers import PreTrainedTokenizer
-from typing import List
+from typing import List, Union
 import torch
 
 
@@ -50,3 +50,15 @@ def enforce_tokens(scores: torch.Tensor, tokens: List[int]):
     scores.fill_(scores.min())
     scores[tokens] = choice_scores
     return scores
+
+
+class SentenceChecker:
+    def __init__(self, tokenizer: PreTrainedTokenizer):
+        self.full_stop_token = text_to_token(tokenizer, "It is a sentence.", last=True)
+        self.new_line_token = text_to_token(tokenizer, "It is a new line\n", last=True)
+
+    def _check_sentence_end(self, input_ids: Union[List[int], torch.Tensor]):
+        if isinstance(input_ids, list):
+            return (input_ids[1] == self.full_stop_token) | (input_ids[-1] == self.new_line_token)
+        else:
+            return (input_ids[:, -1] == self.full_stop_token) | (input_ids[:, -1] == self.new_line_token)

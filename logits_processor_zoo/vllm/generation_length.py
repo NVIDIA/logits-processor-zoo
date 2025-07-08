@@ -18,10 +18,10 @@
 from typing import List, Union
 import torch
 from transformers import PreTrainedTokenizer, AutoTokenizer
-from logits_processor_zoo.utils import text_to_token
+from logits_processor_zoo.utils import text_to_token, SentenceChecker
 
 
-class GenLengthLogitsProcessor:
+class GenLengthLogitsProcessor(SentenceChecker):
     """
     A logits processor that adjusts the likelihood of the end-of-sequence (EOS) token
     based on the length of the generated sequence, encouraging or discouraging shorter answers.
@@ -38,10 +38,10 @@ class GenLengthLogitsProcessor:
     """
     def __init__(self, tokenizer: Union[PreTrainedTokenizer, str], boost_factor: float,
                  p: int = 2, complete_sentences: bool = False, boost_token_str: str = None):
-
         self.tokenizer = tokenizer
         if isinstance(self.tokenizer, str):
             self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer)
+        SentenceChecker.__init__(self, self.tokenizer)
 
         self.boost_token = self.tokenizer.eos_token_id
         self.boost_token_str = boost_token_str
@@ -49,8 +49,6 @@ class GenLengthLogitsProcessor:
             self.boost_token = text_to_token(self.tokenizer, boost_token_str, last=False)
         self.boost_factor = boost_factor
         self.p = p
-        self.full_stop_token = text_to_token(self.tokenizer, "It is a sentence.", last=True)
-        self.new_line_token = text_to_token(self.tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
 
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
@@ -61,7 +59,7 @@ class GenLengthLogitsProcessor:
             boost_val = self.boost_factor * (gen_length ** self.p) / (10 ** self.p)
 
         if self.complete_sentences and gen_length > 0:
-            enabled = (past_token_ids[-1] == self.full_stop_token) | (past_token_ids[-1] == self.new_line_token)
+            enabled = self._check_sentence_end(past_token_ids)
             scores[self.boost_token] += enabled * boost_val
         else:
             scores[self.boost_token] += boost_val

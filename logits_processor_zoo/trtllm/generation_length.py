@@ -19,10 +19,10 @@ from typing import List, Optional
 from transformers import PreTrainedTokenizer
 import torch
 from tensorrt_llm.sampling_params import LogitsProcessor
-from logits_processor_zoo.utils import text_to_token
+from logits_processor_zoo.utils import text_to_token, SentenceChecker
 
 
-class GenLengthLogitsProcessor(LogitsProcessor):
+class GenLengthLogitsProcessor(LogitsProcessor, SentenceChecker):
     """
     A logits processor that adjusts the likelihood of the end-of-sequence (EOS) token
     based on the length of the generated sequence, encouraging or discouraging shorter answers.
@@ -37,9 +37,9 @@ class GenLengthLogitsProcessor(LogitsProcessor):
                                         or a new line. Default is False.
     boost_token_str (str, optional): A string to be tokenized and used instead of EOS. Especially useful for </think>.
     """
-    def __init__(self, tokenizer: PreTrainedTokenizer, boost_factor: float,
-                 p: int = 2, complete_sentences: bool = False, boost_token_str: str = None):
-
+    def __init__(self, tokenizer: PreTrainedTokenizer, boost_factor: float, p: int = 2,
+                 complete_sentences: bool = False, boost_token_str: str = None):
+        SentenceChecker.__init__(self, tokenizer)
         self.tokenizer = tokenizer
         self.boost_token = self.tokenizer.eos_token_id
         self.boost_token_str = boost_token_str
@@ -47,8 +47,6 @@ class GenLengthLogitsProcessor(LogitsProcessor):
             self.boost_token = text_to_token(self.tokenizer, boost_token_str, last=False)
         self.boost_factor = boost_factor
         self.p = p
-        self.full_stop_token = text_to_token(self.tokenizer, "It is a sentence.", last=True)
-        self.new_line_token = text_to_token(self.tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
         self.token_count = 0
 
@@ -64,7 +62,7 @@ class GenLengthLogitsProcessor(LogitsProcessor):
             ids = torch.LongTensor(token_ids).to(logits.device, non_blocking=True)
 
             if self.complete_sentences:
-                enabled = (ids[:, -1] == self.full_stop_token) | (ids[:, -1] == self.new_line_token)
+                enabled = self._check_sentence_end(ids)
                 logits[:, :, self.boost_token] += enabled * boost_val
             else:
                 logits[:, :, self.boost_token] += boost_val
