@@ -64,14 +64,8 @@ class TriggerPhraseLogitsProcessor:
     # Mutable logits processor gets cloned for each prompt in a batch in order to prevent updating the same object
     # https://github.com/vllm-project/vllm/blob/19dcc02a72e3ed52e3bf95aae44ea1f40ce42ea0/vllm/sampling_params.py#L537-L550
     def clone(self):
-        return TriggerPhraseLogitsProcessor(
-            self.tokenizer,
-            self.phrase,
-            self.trigger_token_phrase,
-            self.trigger_time,
-            self.initial_trigger_count,
-            self.trigger_after,
-        )
+        return TriggerPhraseLogitsProcessor(self.tokenizer, self.phrase, self.trigger_token_phrase, self.trigger_time,
+                                            self.initial_trigger_count, self.trigger_after)
 
     def _reset(self):
         self.index = -1
