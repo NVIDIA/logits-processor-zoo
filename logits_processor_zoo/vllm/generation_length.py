@@ -52,6 +52,9 @@ class GenLengthLogitsProcessor(SentenceChecker):
         self.complete_sentences = complete_sentences
 
     def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
+        if self.boost_token in past_token_ids:  # do not boost repeatedly
+            return scores
+
         gen_length = len(past_token_ids)
 
         boost_val = 0

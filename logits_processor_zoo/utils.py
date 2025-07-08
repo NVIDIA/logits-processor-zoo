@@ -58,7 +58,7 @@ class SentenceChecker:
         self.new_line_token = text_to_token(tokenizer, "It is a new line\n", last=True)
 
     def _check_sentence_end(self, input_ids: Union[List[int], torch.Tensor]):
-        if isinstance(input_ids, list):
-            return (input_ids[1] == self.full_stop_token) | (input_ids[-1] == self.new_line_token)
+        if isinstance(input_ids, list) or isinstance(input_ids, tuple):  # vllm input
+            return (input_ids[-1] == self.full_stop_token) | (input_ids[-1] == self.new_line_token)
         else:
             return (input_ids[:, -1] == self.full_stop_token) | (input_ids[:, -1] == self.new_line_token)

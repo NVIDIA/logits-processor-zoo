@@ -53,8 +53,6 @@ class MaxTimeLogitsProcessor(SentenceChecker):
         self.boost_token_str = boost_token_str
         if boost_token_str is not None:
             self.boost_token = text_to_token(self.tokenizer, boost_token_str, last=False)
-        self.full_stop_token = text_to_token(self.tokenizer, "It is a sentence.", last=True)
-        self.new_line_token = text_to_token(self.tokenizer, "It is a new line\n", last=True)
         self.complete_sentences = complete_sentences
         self.max_time = max_time
         self._reset()
@@ -78,6 +76,8 @@ class MaxTimeLogitsProcessor(SentenceChecker):
         past_token_ids: List[int],
         scores: torch.Tensor,
     ) -> torch.Tensor:
+        if self.boost_token in past_token_ids:  # do not force repeatedly
+            return scores
 
         elapsed_time = time.time() - self.start_time
         time_exceeded = elapsed_time > self.max_time
