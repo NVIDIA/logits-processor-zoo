@@ -51,3 +51,9 @@ A logits processor that mitigates hallucinated model outputs by enforcing a pred
 ```
 python lpz_examples/trtllm/prevent_hallucination_logits_processor.py -p "What are Nobel Prizes? Name the winners in 1977"
 ```
+
+### MaxTimeLogitsProcessor
+A logits processor that enforces the end-of-sentence (EOS) token after a specified maximum time passes, optionally waiting for a new line or a full stop. Useful for controlling generation time and ensuring responses complete within time constraints.
+```
+python lpz_examples/trtllm/max_time_logits_processor.py 
+```
