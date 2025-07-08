@@ -36,15 +36,9 @@ class TriggerPhraseLogitsProcessor:
     trigger_after (bool): Whether the phrase is written after the trigger token or instead of the trigger token.
     """
 
-    def __init__(
-        self,
-        tokenizer: Union[PreTrainedTokenizer, str],
-        phrase: str,
-        trigger_token_phrase: Optional[str] = None,
-        trigger_time: Optional[float] = None,
-        trigger_count: int = 1,
-        trigger_after: bool = False,
-    ):
+    def __init__(self, tokenizer: Union[PreTrainedTokenizer, str], phrase: str,
+                 trigger_token_phrase: Optional[str] = None, trigger_time: Optional[float] = None,
+                 trigger_count: int = 1, trigger_after: bool = False):
 
         assert (
             trigger_token_phrase is not None or trigger_time is not None
@@ -57,11 +51,10 @@ class TriggerPhraseLogitsProcessor:
         self.phrase = phrase
         self.trigger_token_phrase = trigger_token_phrase
         self.trigger_count = trigger_count
-        self.trigger_token = (
-            text_to_token(self.tokenizer, trigger_token_phrase, last=False)
-            if trigger_token_phrase
-            else None
-        )
+        self.trigger_token = None
+        if trigger_token_phrase is not None:
+            self.trigger_token = text_to_token(self.tokenizer, trigger_token_phrase, last=False)
+
         self.phrase_tokens = self.tokenizer.encode(phrase, add_special_tokens=False)
         self.initial_trigger_count = trigger_count
         self.trigger_after = trigger_after
@@ -85,22 +78,15 @@ class TriggerPhraseLogitsProcessor:
         self.trigger_count = self.initial_trigger_count
         self.start_time = time.time()
 
-    def __call__(
-        self,
-        prompt_tokens_ids: List[int],
-        past_token_ids: List[int],
-        scores: torch.Tensor,
-    ) -> torch.Tensor:
+    def __call__(self, prompt_tokens_ids: List[int], past_token_ids: List[int], scores: torch.Tensor) -> torch.Tensor:
         if not past_token_ids:  # new generation
             self._reset()
 
         if self.trigger_count <= 0:
             return scores
 
-        if (
-            scores.argmax() == self.trigger_token
-            or time.time() - self.start_time > self.trigger_time
-        ) and self.index == -1:
+        time_over = time.time() - self.start_time > self.trigger_time
+        if (scores.argmax() == self.trigger_token or time_over) and self.index == -1:
             self.index = 0
             if not self.trigger_after:
                 scores = enforce_tokens(scores, [self.phrase_tokens[self.index]])
@@ -109,9 +95,7 @@ class TriggerPhraseLogitsProcessor:
             scores = enforce_tokens(scores, [self.phrase_tokens[self.index]])
             self.index += 1
 
-        if (
-            len(self.phrase_tokens) == self.index
-        ):  # phrase completed, reset for next trigger
+        if len(self.phrase_tokens) == self.index:  # phrase completed, reset for next trigger
             self.index = -1
             self.trigger_count -= 1
             self.start_time = time.time()

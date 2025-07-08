@@ -84,9 +84,7 @@ class MaxTimeLogitsProcessor:
 
         enabled = True
         if self.complete_sentences and gen_length > 0:
-            enabled = (past_token_ids[-1] == self.full_stop_token) | (
-                past_token_ids[-1] == self.new_line_token
-            )
+            enabled = (past_token_ids[-1] == self.full_stop_token) | (past_token_ids[-1] == self.new_line_token)
 
         if time_exceeded and enabled:
             scores = enforce_tokens(scores, [self.boost_token])

@@ -37,24 +37,16 @@ class TriggerPhraseLogitsProcessor(LogitsProcessor):
     trigger_after (bool): Whether the phrase is written after the trigger token or instead of the trigger token.
     """
 
-    def __init__(
-        self,
-        tokenizer: PreTrainedTokenizer,
-        phrase: str,
-        trigger_token_phrase: Optional[str] = None,
-        trigger_time: Optional[float] = None,
-        trigger_count: int = 1,
-        trigger_after: bool = False,
-    ):
+    def __init__(self, tokenizer: PreTrainedTokenizer, phrase: str, trigger_token_phrase: Optional[str] = None,
+                 trigger_time: Optional[float] = None, trigger_count: int = 1, trigger_after: bool = False):
         assert (
             trigger_token_phrase is not None or trigger_time is not None
         ), "Either trigger_token_phrase or trigger_time must be provided"
         self.tokenizer = tokenizer
-        self.trigger_token = (
-            text_to_token(self.tokenizer, trigger_token_phrase, last=False)
-            if trigger_token_phrase is not None
-            else None
-        )
+        self.trigger_token = None
+        if trigger_token_phrase is not None:
+            self.trigger_token = text_to_token(self.tokenizer, trigger_token_phrase, last=False)
+
         self.trigger_time = trigger_time or float("inf")
         self.phrase_tokens = self.tokenizer.encode(phrase, add_special_tokens=False)
         self.initial_trigger_count = trigger_count
@@ -67,14 +59,9 @@ class TriggerPhraseLogitsProcessor(LogitsProcessor):
         self.iterators = -torch.ones(beam_width, dtype=torch.int32)
         self.trigger_counts = self.initial_trigger_count * torch.ones(beam_width, dtype=torch.int32)
 
-    def __call__(
-        self,
-        req_id: int,
-        logits: torch.Tensor,
-        token_ids: List[List[int]],
-        stream_ptr: Optional[int],
-        client_id: Optional[int],
-    ) -> None:
+    def __call__(self, req_id: int, logits: torch.Tensor,
+                 token_ids: List[List[int]], stream_ptr: Optional[int],
+                 client_id: Optional[int]) -> None:
         beam_width = len(token_ids)
         if self.iterators is None:
             self._init_before_gen(beam_width)
@@ -88,9 +75,8 @@ class TriggerPhraseLogitsProcessor(LogitsProcessor):
 
                 current_index = self.iterators[i].item()
 
-                if (
-                    logits[0, i].argmax() == self.trigger_token or (time.time() - self.start_time > self.trigger_time)
-                ) and current_index == -1:
+                time_over = time.time() - self.start_time > self.trigger_time
+                if (logits[0, i].argmax() == self.trigger_token or time_over) and current_index == -1:
                     self.iterators[i] = 0
                     if not self.trigger_after:
                         enforce_tokens(logits[0, i], [self.phrase_tokens[0]])

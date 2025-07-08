@@ -38,27 +38,20 @@ class TriggerPhraseLogitsProcessor(BaseLogitsProcessor):
     trigger_after (bool): Whether the phrase is written after the trigger token or instead of the trigger token.
     """
 
-    def __init__(
-        self,
-        tokenizer: PreTrainedTokenizer,
-        batch_size: int,
-        phrase: str,
-        trigger_token_phrase: Optional[str] = None,
-        trigger_time: Optional[float] = None,
-        trigger_count: int = 1,
-        trigger_after: bool = False,
-    ):
+    def __init__(self, tokenizer: PreTrainedTokenizer, batch_size: int, phrase: str,
+                 trigger_token_phrase: Optional[str] = None, trigger_time: Optional[float] = None,
+                 trigger_count: int = 1, trigger_after: bool = False):
 
         assert (
             trigger_token_phrase is not None or trigger_time is not None
         ), "Either trigger_token_phrase or trigger_time must be provided"
 
         super().__init__()
-        self.trigger_token = (
-            text_to_token(tokenizer, trigger_token_phrase, last=False)
-            if trigger_token_phrase
-            else None
-        )
+
+        self.trigger_token = None
+        if trigger_token_phrase is not None:
+            self.trigger_token = text_to_token(tokenizer, trigger_token_phrase, last=False)
+
         self.phrase_tokens = tokenizer.encode(phrase, add_special_tokens=False)
         self.trigger_after = trigger_after
         self.batch_size = batch_size
@@ -67,23 +60,18 @@ class TriggerPhraseLogitsProcessor(BaseLogitsProcessor):
 
     def _reset(self):
         self.iterators = -torch.ones(self.batch_size, dtype=torch.int32)
-        self.trigger_count = self.initial_trigger_count * torch.ones(
-            self.batch_size, dtype=torch.int32
-        )
+        self.trigger_count = self.initial_trigger_count * torch.ones(self.batch_size, dtype=torch.int32)
         self.start_time = time.time()
 
-    def _process(
-        self, input_ids: torch.LongTensor, scores: torch.FloatTensor
-    ) -> torch.Tensor:
+    def _process(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.Tensor:
         for i in range(scores.shape[0]):
             if self.trigger_count[i] <= 0:
                 continue
 
             it = self.iterators[i].item()
-            if (
-                scores[i, :].argmax() == self.trigger_token
-                or time.time() - self.start_time > self.trigger_time
-            ) and it == -1:
+
+            time_over = time.time() - self.start_time > self.trigger_time
+            if (scores[i, :].argmax() == self.trigger_token or time_over) and it == -1:
                 self.iterators[i] = 0
                 if not self.trigger_after:
                     scores[i] = enforce_tokens(scores[i], [self.phrase_tokens[0]])
@@ -92,9 +80,7 @@ class TriggerPhraseLogitsProcessor(BaseLogitsProcessor):
                 scores[i] = enforce_tokens(scores[i], [self.phrase_tokens[it]])
                 self.iterators[i] += 1
 
-            if (
-                len(self.phrase_tokens) == self.iterators[i].item()
-            ):  # phrase completed, reset for next trigger
+            if len(self.phrase_tokens) == self.iterators[i].item():  # phrase completed, reset for next trigger
                 self.iterators[i] = -1
                 self.trigger_count[i] -= 1
                 self.start_time = time.time()

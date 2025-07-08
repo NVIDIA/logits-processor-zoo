@@ -62,9 +62,7 @@ class MaxTimeLogitsProcessor(BaseLogitsProcessor):
 
         enabled = (input_ids[:, -token_count:] == self.boost_token).sum(dim=1) == 0
         if self.complete_sentences:
-            enabled = enabled & (
-                (input_ids[:, -1] == self.full_stop_token) | (input_ids[:, -1] == self.new_line_token)
-            )
+            enabled = enabled & ((input_ids[:, -1] == self.full_stop_token) | (input_ids[:, -1] == self.new_line_token))
 
         if elapsed_time > self.max_time:
             for i in range(scores.shape[0]):
