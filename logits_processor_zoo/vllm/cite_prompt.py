@@ -17,7 +17,8 @@
 
 from typing import List, Union
 import torch
-from transformers import PreTrainedTokenizer, AutoTokenizer
+from transformers import PreTrainedTokenizer
+from logits_processor_zoo.vllm.tokenizer import get_vllm_tokenizer
 
 
 class CiteFromPromptLogitsProcessor:
@@ -35,9 +36,7 @@ class CiteFromPromptLogitsProcessor:
     """
     def __init__(self, tokenizer: Union[PreTrainedTokenizer, str], boost_factor: float = 1.0, boost_eos: bool = True,
                  conditional_boost_factor: float = 0.0):
-        self.tokenizer = tokenizer
-        if isinstance(self.tokenizer, str):
-            self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer)
+        self.tokenizer = get_vllm_tokenizer(tokenizer)
 
         self.boost_factor = boost_factor
         self.eos_token_id = self.tokenizer.eos_token_id

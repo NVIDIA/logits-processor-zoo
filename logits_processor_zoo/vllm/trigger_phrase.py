@@ -16,10 +16,11 @@
 #
 
 import time
-from transformers import PreTrainedTokenizer, AutoTokenizer
+from transformers import PreTrainedTokenizer
 from typing import List, Optional, Union
 import torch
 from logits_processor_zoo.utils import text_to_token, enforce_tokens
+from logits_processor_zoo.vllm.tokenizer import get_vllm_tokenizer
 
 
 class TriggerPhraseLogitsProcessor:
@@ -44,9 +45,7 @@ class TriggerPhraseLogitsProcessor:
             trigger_token_phrase is not None or trigger_time is not None
         ), "Either trigger_token_phrase or trigger_time must be provided"
 
-        self.tokenizer = tokenizer
-        if isinstance(self.tokenizer, str):
-            self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer)
+        self.tokenizer = get_vllm_tokenizer(tokenizer)
 
         self.phrase = phrase
         self.trigger_token_phrase = trigger_token_phrase
@@ -61,8 +60,7 @@ class TriggerPhraseLogitsProcessor:
         self.trigger_time = trigger_time or float("inf")
         self._reset()
 
-    # Mutable logits processor gets cloned for each prompt in a batch in order to prevent updating the same object
-    # https://github.com/vllm-project/vllm/blob/19dcc02a72e3ed52e3bf95aae44ea1f40ce42ea0/vllm/sampling_params.py#L537-L550
+    # Mutable logits processor gets cloned for each prompt in a batch to avoid updating the same object.
     def clone(self):
         return TriggerPhraseLogitsProcessor(self.tokenizer, self.phrase, self.trigger_token_phrase, self.trigger_time,
                                             self.initial_trigger_count, self.trigger_after)
