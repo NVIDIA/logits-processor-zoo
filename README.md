@@ -58,6 +58,23 @@ gen_output = model.generate(
 
 For the detailed examples in each framework, please have a look at **lpz_examples** directory.
 
+### vLLM serve with string tokenizers
+
+When vLLM logits processors are configured through the HTTP API, processor `kwargs` come from the request body.
+If a processor receives `tokenizer` as a string, the server will only load it when the tokenizer name is explicitly
+allowlisted in the `LOGITS_PROCESSOR_ZOO_VLLM_ALLOWED_TOKENIZERS` environment variable. Tokenizers are loaded from
+local files only, so the tokenizer must already be available in the server environment.
+
+```bash
+LOGITS_PROCESSOR_ZOO_VLLM_ALLOWED_TOKENIZERS=Qwen/Qwen2.5-1.5B-Instruct \
+  vllm serve Qwen/Qwen2.5-1.5B-Instruct \
+  --dtype auto \
+  --api-key lpz-test \
+  --logits-processor-pattern "logits_processor_zoo.vllm"
+```
+
+Multiple trusted tokenizer names can be separated with commas.
+
 ## Available Logits Processors
 
 ### GenLengthLogitsProcessor

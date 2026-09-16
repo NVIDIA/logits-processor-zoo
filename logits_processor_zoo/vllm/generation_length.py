@@ -17,8 +17,9 @@
 
 from typing import List, Union
 import torch
-from transformers import PreTrainedTokenizer, AutoTokenizer
+from transformers import PreTrainedTokenizer
 from logits_processor_zoo.utils import text_to_token, SentenceChecker
+from logits_processor_zoo.vllm.tokenizer import get_vllm_tokenizer
 
 
 class GenLengthLogitsProcessor(SentenceChecker):
@@ -38,9 +39,7 @@ class GenLengthLogitsProcessor(SentenceChecker):
     """
     def __init__(self, tokenizer: Union[PreTrainedTokenizer, str], boost_factor: float,
                  p: int = 2, complete_sentences: bool = False, boost_token_str: str = None):
-        self.tokenizer = tokenizer
-        if isinstance(self.tokenizer, str):
-            self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer)
+        self.tokenizer = get_vllm_tokenizer(tokenizer)
         SentenceChecker.__init__(self, self.tokenizer)
 
         self.boost_token = self.tokenizer.eos_token_id

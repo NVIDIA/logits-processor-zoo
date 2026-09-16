@@ -16,10 +16,11 @@
 #
 
 import time
-from typing import List
+from typing import List, Union
 import torch
-from transformers import PreTrainedTokenizer, AutoTokenizer
+from transformers import PreTrainedTokenizer
 from logits_processor_zoo.utils import text_to_token, enforce_tokens, SentenceChecker
+from logits_processor_zoo.vllm.tokenizer import get_vllm_tokenizer
 
 
 class MaxTimeLogitsProcessor(SentenceChecker):
@@ -39,14 +40,12 @@ class MaxTimeLogitsProcessor(SentenceChecker):
 
     def __init__(
         self,
-        tokenizer: PreTrainedTokenizer,
+        tokenizer: Union[PreTrainedTokenizer, str],
         max_time: float,
         complete_sentences: bool = False,
         boost_token_str: str = None,
     ):
-        self.tokenizer = tokenizer
-        if isinstance(self.tokenizer, str):
-            self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer)
+        self.tokenizer = get_vllm_tokenizer(tokenizer)
         SentenceChecker.__init__(self, self.tokenizer)
 
         self.boost_token = self.tokenizer.eos_token_id
@@ -57,8 +56,7 @@ class MaxTimeLogitsProcessor(SentenceChecker):
         self.max_time = max_time
         self._reset()
 
-    # Mutable logits processor gets cloned for each prompt in a batch in order to prevent updating the same object
-    # https://github.com/vllm-project/vllm/blob/19dcc02a72e3ed52e3bf95aae44ea1f40ce42ea0/vllm/sampling_params.py#L537-L550
+    # Mutable logits processor gets cloned for each prompt in a batch to avoid updating the same object.
     def clone(self):
         return MaxTimeLogitsProcessor(
             self.tokenizer,
